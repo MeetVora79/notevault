@@ -103,13 +103,13 @@ export default function NoteCard({ note, view, onClick }) {
 
       {/* Checkbox — top left, visible on hover or when any card is selected */}
       <div
-        className={`absolute top-2.5 left-2.5 z-10 transition-opacity ${
+        className={`absolute bottom-2 left-2 z-10 transition-opacity ${
           isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
         }`}
         onClick={(e) => stop(e, () => dispatch(toggleSelect(note._id)))}
       >
         <div
-          className={`w-4.5 h-4.5 border-2 flex items-center justify-center transition-colors ${
+          className={`w-4.5 h-4.5 rounded-sm border-2 flex items-center justify-center transition-colors ${
             isSelected
               ? "bg-brand border-brand"
               : "border-muted-foreground/50 bg-background"

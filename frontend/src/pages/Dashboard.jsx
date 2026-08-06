@@ -53,7 +53,7 @@ export default function Dashboard() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar activeView={activeView} onViewChange={setActiveView} labels={allLabels} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Navbar onSearch={setSearch} pinnedCount={pinnedCount} />
+        <Navbar onSearch={setSearch} pinnedCount={pinnedCount} activeView={activeView} />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-6 py-8">
             {activeView === "all" && !search && (

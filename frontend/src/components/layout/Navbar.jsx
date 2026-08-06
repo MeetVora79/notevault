@@ -5,14 +5,16 @@ import {
   useTogglePinMutation,
   useToggleArchiveMutation,
   useTrashNoteMutation,
+  useRestoreNoteMutation,
+  useDeleteNotePermanentlyMutation,
 } from "@/features/notes/noteApi";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Pin, Archive, Trash2 } from "lucide-react";
+import { Search, X, Pin, PinOff, Archive, ArchiveX, Trash2, RotateCcw, Delete } from "lucide-react";
 
 const MAX_PINS = 3;
 
-export default function Navbar({ onSearch, pinnedCount }) {
+export default function Navbar({ onSearch, pinnedCount, activeView }) {
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
   const isSelecting = selectedIds.length > 0;
@@ -20,9 +22,21 @@ export default function Navbar({ onSearch, pinnedCount }) {
   const [togglePin] = useTogglePinMutation();
   const [toggleArchive] = useToggleArchiveMutation();
   const [trashNote] = useTrashNoteMutation();
+  const [restoreNote] = useRestoreNoteMutation();
+  const [deleteForever] = useDeleteNotePermanentlyMutation();
   const [pinWarning, setPinWarning] = useState(false);
 
+  const isTrashed = activeView === "trashed";
+  const isPinned = activeView === "pinned";
+  const isArchived = activeView === "archived";
+
   const handleBulkPin = async () => {
+    if (isPinned) {
+      // In pinned view — unpin all selected
+      await Promise.all(selectedIds.map((id) => togglePin(id)));
+      dispatch(clearSelection());
+      return;
+    }
     const slotsLeft = MAX_PINS - pinnedCount;
     if (slotsLeft <= 0) {
       setPinWarning(true);
@@ -44,20 +58,29 @@ export default function Navbar({ onSearch, pinnedCount }) {
     dispatch(clearSelection());
   };
 
+  const handleBulkRestore = async () => {
+    await Promise.all(selectedIds.map((id) => restoreNote(id)));
+    dispatch(clearSelection());
+  };
+
+  const handleBulkDeleteForever = async () => {
+    await Promise.all(selectedIds.map((id) => deleteForever(id)));
+    dispatch(clearSelection());
+  };
+
   return (
     <header className="h-14 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10 flex items-center px-6 gap-4">
       {isSelecting ? (
-        // --- Selection mode ---
         <div className="flex items-center gap-3 w-full">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 shrink-0"
+            className="h-8 w-8 shrink-0 hover:cursor-pointer"
             onClick={() => dispatch(clearSelection())}
           >
             <X size={16} />
           </Button>
-          <span className="text-sm font-medium text-foreground">
+          <span className="text-sm font-medium">
             {selectedIds.length} selected
           </span>
 
@@ -67,34 +90,56 @@ export default function Navbar({ onSearch, pinnedCount }) {
                 Max {MAX_PINS} pinned notes reached
               </span>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={handleBulkPin}
-            >
-              <Pin size={14} /> Pin
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={handleBulkArchive}
-            >
-              <Archive size={14} /> Archive
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 hover:border-destructive hover:text-destructive"
-              onClick={handleBulkTrash}
-            >
-              <Trash2 size={14} /> Delete
-            </Button>
+
+            {/* Trash view actions */}
+            {isTrashed ? (
+              <>
+                <Button variant="outline" size="sm" className="gap-2 hover:cursor-pointer" onClick={handleBulkRestore}>
+                  <RotateCcw size={14} /> Restore
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
+                  onClick={handleBulkDeleteForever}
+                >
+                  <Delete size={14} /> Delete forever
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Pin/Unpin — hidden in archive view since archived notes shouldn't be pinned */}
+                {!isArchived && (
+                  <Button variant="outline" size="sm" className="gap-2 hover:cursor-pointer" onClick={handleBulkPin}>
+                    {isPinned
+                      ? <><PinOff size={14} /> Unpin</>
+                      : <><Pin size={14} /> Pin</>
+                    }
+                  </Button>
+                )}
+
+                {/* Archive/Unarchive */}
+                <Button variant="outline" size="sm" className="gap-2 hover:cursor-pointer" onClick={handleBulkArchive}>
+                  {isArchived
+                    ? <><ArchiveX size={14} /> Unarchive</>
+                    : <><Archive size={14} /> Archive</>
+                  }
+                </Button>
+
+                {/* Delete — not shown in trash view since we handle that above */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
+                  onClick={handleBulkTrash}
+                >
+                  <Trash2 size={14} /> Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
       ) : (
-        // --- Normal search mode ---
         <div className="relative w-full max-w-md">
           <Search
             size={15}
@@ -102,7 +147,7 @@ export default function Navbar({ onSearch, pinnedCount }) {
           />
           <Input
             placeholder="Search notes..."
-            className="pl-9 h-9 bg-muted/50 border-transparent focus:bg-background focus:border-border transition-all"
+            className="pl-9 h-9 bg-muted/50 border-transparent shadow-sm focus:bg-background focus:border-border transition-all"
             onChange={(e) => onSearch(e.target.value)}
           />
         </div>
