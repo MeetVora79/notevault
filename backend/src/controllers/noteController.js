@@ -151,3 +151,23 @@ export const deleteNotePermanently = asyncHandler(async (req, res) => {
   await note.deleteOne();
   res.status(200).json({ success: true, message: "Note permanently deleted" });
 });
+
+// @desc   Duplicate a note
+// @route  POST /api/notes/:id/copy
+// @access Private
+export const copyNote = asyncHandler(async (req, res) => {
+  const original = await Note.findOne({ _id: req.params.id, user: req.user._id });
+  if (!original) {
+    res.status(404);
+    throw new Error("Note not found");
+  }
+
+  const copy = await Note.create({
+    user: req.user._id,
+    title: original.title ? `${original.title} (copy)` : "",
+    content: original.content,
+    labels: original.labels,
+  });
+
+  res.status(201).json({ success: true, note: copy });
+});

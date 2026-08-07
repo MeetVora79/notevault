@@ -17,7 +17,11 @@ export const noteApi = api.injectEndpoints({
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
     updateNote: builder.mutation({
-      query: ({ id, ...body }) => ({ url: `/notes/${id}`, method: "PUT", body }),
+      query: ({ id, ...body }) => ({
+        url: `/notes/${id}`,
+        method: "PUT",
+        body,
+      }),
       invalidatesTags: (result, error, { id }) => [{ type: "Note", id }],
     }),
     togglePin: builder.mutation({
@@ -40,6 +44,10 @@ export const noteApi = api.injectEndpoints({
       query: (id) => ({ url: `/notes/${id}/permanent`, method: "DELETE" }),
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
+    copyNote: builder.mutation({
+      query: (id) => ({ url: `/notes/${id}/copy`, method: "POST" }),
+      invalidatesTags: [{ type: "Note", id: "LIST" }],
+    }),
   }),
 });
 
@@ -52,4 +60,5 @@ export const {
   useTrashNoteMutation,
   useRestoreNoteMutation,
   useDeleteNotePermanentlyMutation,
+  useCopyNoteMutation,
 } = noteApi;

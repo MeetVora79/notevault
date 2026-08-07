@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSelect } from "@/features/notes/selectionSlice";
 import {
@@ -6,9 +7,19 @@ import {
   useTrashNoteMutation,
   useRestoreNoteMutation,
   useDeleteNotePermanentlyMutation,
+  useCopyNoteMutation,
 } from "@/features/notes/noteApi";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import LabelPopover from "./LabelPopover";
+import SummaryPopover from "./SummaryPopover";
 import {
   Pin,
   Archive,
@@ -16,6 +27,10 @@ import {
   RotateCcw,
   Delete,
   Sparkles,
+  MoreVertical,
+  Tag,
+  Copy,
+  ClipboardCopy,
 } from "lucide-react";
 
 function ActionBtn({ label, onClick, children, destructive }) {
@@ -24,7 +39,7 @@ function ActionBtn({ label, onClick, children, destructive }) {
       variant="ghost"
       size="icon"
       title={label}
-      className={`h-7 w-7 ${destructive ? "hover:text-destructive" : "hover:text-foreground"} text-muted-foreground`}
+      className={`h-7 w-7 cursor-pointer ${destructive ? "hover:text-destructive" : "hover:text-foreground"} text-muted-foreground`}
       onClick={onClick}
     >
       {children}
@@ -34,6 +49,7 @@ function ActionBtn({ label, onClick, children, destructive }) {
 
 export default function NoteCard({ note, view, onClick }) {
   const dispatch = useDispatch();
+  const popoverOpen = useRef(false);
   const selectedIds = useSelector((state) => state.selection.selectedIds);
   const isSelected = selectedIds.includes(note._id);
   const isSelecting = selectedIds.length > 0;
@@ -43,6 +59,7 @@ export default function NoteCard({ note, view, onClick }) {
   const [trashNote] = useTrashNoteMutation();
   const [restoreNote] = useRestoreNoteMutation();
   const [deleteForever] = useDeleteNotePermanentlyMutation();
+  const [copyNote] = useCopyNoteMutation();
 
   const stop = (e, fn) => {
     e.stopPropagation();
@@ -52,11 +69,17 @@ export default function NoteCard({ note, view, onClick }) {
   const isTrashView = view === "trashed";
 
   const handleCardClick = () => {
+    if (popoverOpen.current) return;
     if (isSelecting) {
       dispatch(toggleSelect(note._id));
     } else {
       onClick();
     }
+  };
+
+  const handleCopyToClipboard = () => {
+    const text = note.title ? `${note.title}\n\n${note.content}` : note.content;
+    navigator.clipboard.writeText(text);
   };
 
   return (
@@ -91,7 +114,7 @@ export default function NoteCard({ note, view, onClick }) {
       )}
 
       {!isTrashView && !note.isPinned && (
-        <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100">
+        <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 cursor-pointer">
           <ActionBtn
             label={note.isPinned ? "Unpin" : "Pin"}
             onClick={(e) => stop(e, () => togglePin(note._id))}
@@ -103,7 +126,7 @@ export default function NoteCard({ note, view, onClick }) {
 
       {/* Checkbox — top left, visible on hover or when any card is selected */}
       <div
-        className={`absolute bottom-2 left-2 z-10 transition-opacity ${
+        className={`absolute bottom-3 left-3 z-10 transition-opacity ${
           isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
         }`}
         onClick={(e) => stop(e, () => dispatch(toggleSelect(note._id)))}
@@ -171,44 +194,107 @@ export default function NoteCard({ note, view, onClick }) {
         <div
           className={`flex items-center justify-end gap-0.5 px-2 pb-2 opacity-0 ${isSelecting ? "" : " group-hover:opacity-100"} transition-opacity`}
         >
-          {isTrashView ? (
-            <>
-              <ActionBtn
-                label="Restore"
-                onClick={(e) => stop(e, () => restoreNote(note._id))}
-              >
-                <RotateCcw size={14} />
-              </ActionBtn>
-              <ActionBtn
-                label="Delete forever"
-                destructive
-                onClick={(e) => stop(e, () => deleteForever(note._id))}
-              >
-                <Delete size={14} />
-              </ActionBtn>
-            </>
-          ) : (
-            <>
-              {/* <ActionBtn
-                label={note.isPinned ? "Unpin" : "Pin"}
-                onClick={(e) => stop(e, () => togglePin(note._id))}
-              >
-                <Pin size={14} fill={note.isPinned ? "currentColor" : "none"} />
-              </ActionBtn> */}
-              <ActionBtn
-                label={note.isArchived ? "Unarchive" : "Archive"}
-                onClick={(e) => stop(e, () => toggleArchive(note._id))}
-              >
-                <Archive size={14} />
-              </ActionBtn>
-              <ActionBtn
-                label="Delete"
-                destructive
-                onClick={(e) => stop(e, () => trashNote(note._id))}
-              >
-                <Trash2 size={14} />
-              </ActionBtn>
-            </>
+          <div className="flex items-center gap-0.5">
+            {isTrashView ? (
+              <>
+                <ActionBtn
+                  label="Restore"
+                  onClick={(e) => stop(e, () => restoreNote(note._id))}
+                >
+                  <RotateCcw size={14} />
+                </ActionBtn>
+                <ActionBtn
+                  label="Delete forever"
+                  destructive
+                  onClick={(e) => stop(e, () => deleteForever(note._id))}
+                >
+                  <Delete size={14} />
+                </ActionBtn>
+              </>
+            ) : (
+              <>
+                <ActionBtn
+                  label={note.isArchived ? "Unarchive" : "Archive"}
+                  onClick={(e) => stop(e, () => toggleArchive(note._id))}
+                >
+                  <Archive size={14} className="cursor-pointer" />
+                </ActionBtn>
+              </>
+            )}
+          </div>
+          {/* Kebab menu — only on non-trash views */}
+          {!isTrashView && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {/* Summarize */}
+                <SummaryPopover note={note} onOpenChange={(open) => { popoverOpen.current = open; }}>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Sparkles size={14} className="mr-2 text-ai" />
+                    Summarize note
+                  </DropdownMenuItem>
+                </SummaryPopover>
+
+                <DropdownMenuSeparator />
+
+                {/* Add label */}
+                <LabelPopover note={note} onOpenChange={(open) => { popoverOpen.current = open; }}>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Tag size={14} className="mr-2" />
+                    Add label
+                  </DropdownMenuItem>
+                </LabelPopover>
+
+                {/* Copy to clipboard */}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyToClipboard();
+                  }}
+                >
+                  <ClipboardCopy size={14} className="mr-2" />
+                  Copy to clipboard
+                </DropdownMenuItem>
+
+                {/* Make a copy */}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyNote(note._id);
+                  }}
+                >
+                  <Copy size={14} className="mr-2" />
+                  Make a copy
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {/* Delete */}
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    trashNote(note._id);
+                  }}
+                >
+                  <Trash2 size={14} className="mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       }

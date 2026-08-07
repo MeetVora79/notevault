@@ -9,7 +9,14 @@ export const aiApi = api.injectEndpoints({
         body,
       }),
     }),
+    summarizeNote: builder.mutation({
+      query: (body) => ({
+        url: "/ai/summarize",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
-export const { useGenerateTitleMutation } = aiApi;
+export const { useGenerateTitleMutation, useSummarizeNoteMutation } = aiApi;

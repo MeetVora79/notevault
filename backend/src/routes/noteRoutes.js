@@ -9,6 +9,7 @@ import {
   trashNote,
   restoreNote,
   deleteNotePermanently,
+  copyNote,
 } from "../controllers/noteController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -24,5 +25,6 @@ router.patch("/:id/pin", togglePin);
 router.patch("/:id/archive", toggleArchive);
 router.patch("/:id/restore", restoreNote);
 router.delete("/:id/permanent", deleteNotePermanently);
+router.post("/:id/copy", copyNote);
 
 export default router;
