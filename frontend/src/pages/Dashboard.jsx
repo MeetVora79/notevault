@@ -1,18 +1,27 @@
 import { useState, useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { useGetNotesQuery } from "@/features/notes/noteApi";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import NoteComposer from "@/components/notes/NoteComposer";
 import NoteGrid from "@/components/notes/NoteGrid";
 import NoteEditorDialog from "@/components/notes/NoteEditorDialog";
+import { clearSelection, exitSelectionMode } from "@/features/notes/selectionSlice";
 
 export default function Dashboard() {
   const [activeView, setActiveView] = useState("all");
   const [editingNote, setEditingNote] = useState(null);
   const [search, setSearch] = useState("");
+  const dispatch = useDispatch();
+
+  const handleViewChange = (view) => {
+    dispatch(exitSelectionMode());
+    setActiveView(view);
+  };
 
   const queryParams = useMemo(() => {
-    if (activeView === "archived") return { archived: "true", trashed: "false" };
+    if (activeView === "archived")
+      return { archived: "true", trashed: "false" };
     if (activeView === "trashed") return { archived: "false", trashed: "true" };
     return { archived: "false", trashed: "false" };
   }, [activeView]);
@@ -32,7 +41,7 @@ export default function Dashboard() {
         (n) =>
           n.title?.toLowerCase().includes(q) ||
           n.content?.toLowerCase().includes(q) ||
-          n.labels?.some((l) => l.includes(q))
+          n.labels?.some((l) => l.includes(q)),
       );
     }
     return list;
@@ -40,7 +49,7 @@ export default function Dashboard() {
 
   const pinnedCount = useMemo(
     () => (data?.notes || []).filter((n) => n.isPinned).length,
-    [data]
+    [data],
   );
 
   const allLabels = useMemo(() => {
@@ -51,9 +60,19 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar activeView={activeView} onViewChange={setActiveView} labels={allLabels} />
+      <Sidebar
+        activeView={activeView}
+        onViewChange={handleViewChange}
+        labels={allLabels}
+      />
       <div className="flex-1 flex flex-col min-w-0">
-        <Navbar onSearch={setSearch} pinnedCount={pinnedCount} activeView={activeView} />
+        <Navbar
+          onSearch={setSearch}
+          pinnedCount={pinnedCount}
+          activeView={activeView}
+          onViewChange={handleViewChange}
+          currentNotes={notes}
+        />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-6 py-8">
             {activeView === "all" && !search && (

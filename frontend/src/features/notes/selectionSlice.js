@@ -14,11 +14,27 @@ const selectionSlice = createSlice({
         state.selectedIds.push(id);
       }
     },
+    selectAll: (state, action) => {
+      state.selectedIds = action.payload; // array of ids
+    },
     clearSelection: (state) => {
       state.selectedIds = [];
+    },
+    enterSelectionMode: (state) => {
+      state.isSelectionMode = true;
+    },
+    exitSelectionMode: (state) => {
+      state.selectedIds = [];
+      state.isSelectionMode = false;
     },
   },
 });
 
-export const { toggleSelect, clearSelection } = selectionSlice.actions;
+export const {
+  toggleSelect,
+  selectAll,
+  clearSelection,
+  enterSelectionMode,
+  exitSelectionMode,
+} = selectionSlice.actions;
 export default selectionSlice.reducer;

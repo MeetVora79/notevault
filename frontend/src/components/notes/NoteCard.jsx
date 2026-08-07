@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { toggleSelect } from "@/features/notes/selectionSlice";
+import {
+  toggleSelect,
+  enterSelectionMode,
+} from "@/features/notes/selectionSlice";
 import {
   useTogglePinMutation,
   useToggleArchiveMutation,
@@ -50,8 +53,11 @@ function ActionBtn({ label, onClick, children, destructive }) {
 export default function NoteCard({ note, view, onClick }) {
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
+  const isSelectionMode = useSelector(
+    (state) => state.selection.isSelectionMode,
+  );
   const isSelected = selectedIds.includes(note._id);
-  const isSelecting = selectedIds.length > 0;
+  const isSelecting = isSelectionMode;
 
   const [labelOpen, setLabelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -135,7 +141,12 @@ export default function NoteCard({ note, view, onClick }) {
           className={`absolute bottom-3 left-3 z-10 transition-opacity ${
             isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           }`}
-          onClick={(e) => stop(e, () => dispatch(toggleSelect(note._id)))}
+          onClick={(e) =>
+            stop(e, () => {
+              if (!isSelectionMode) dispatch(enterSelectionMode());
+              dispatch(toggleSelect(note._id));
+            })
+          }
         >
           <div
             className={`w-4.5 h-4.5 rounded-sm border-2 flex items-center justify-center transition-colors ${

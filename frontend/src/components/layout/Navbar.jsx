@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { clearSelection } from "@/features/notes/selectionSlice";
+import { clearSelection, selectAll, exitSelectionMode } from "@/features/notes/selectionSlice";
 import {
   useTogglePinMutation,
   useToggleArchiveMutation,
@@ -10,14 +10,37 @@ import {
 } from "@/features/notes/noteApi";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Pin, PinOff, Archive, ArchiveX, Trash2, RotateCcw, Delete } from "lucide-react";
+import {
+  Search,
+  X,
+  Pin,
+  PinOff,
+  Archive,
+  ArchiveX,
+  Trash2,
+  RotateCcw,
+  Delete,
+  CheckSquare,
+  Square,
+} from "lucide-react";
 
 const MAX_PINS = 3;
 
-export default function Navbar({ onSearch, pinnedCount, activeView }) {
+export default function Navbar({
+  onSearch,
+  pinnedCount,
+  activeView,
+  onViewChange,
+  currentNotes = [],
+}) {
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
-  const isSelecting = selectedIds.length > 0;
+  const isSelectionMode = useSelector((state) => state.selection.isSelectionMode);
+  const isSelecting = isSelectionMode;
+
+  const allIds = currentNotes.map((n) => n._id);
+  const isAllSelected =
+    allIds.length > 0 && allIds.every((id) => selectedIds.includes(id));
 
   const [togglePin] = useTogglePinMutation();
   const [toggleArchive] = useToggleArchiveMutation();
@@ -29,6 +52,14 @@ export default function Navbar({ onSearch, pinnedCount, activeView }) {
   const isTrashed = activeView === "trashed";
   const isPinned = activeView === "pinned";
   const isArchived = activeView === "archived";
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      dispatch(clearSelection());
+    } else {
+      dispatch(selectAll(allIds));
+    }
+  };
 
   const handleBulkPin = async () => {
     if (isPinned) {
@@ -76,13 +107,33 @@ export default function Navbar({ onSearch, pinnedCount, activeView }) {
             variant="ghost"
             size="icon"
             className="h-8 w-8 shrink-0 hover:cursor-pointer"
-            onClick={() => dispatch(clearSelection())}
+            onClick={() => dispatch(exitSelectionMode())}
           >
             <X size={16} />
           </Button>
           <span className="text-sm font-medium">
             {selectedIds.length} selected
           </span>
+
+          {/* Select all / unselect all */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-muted-foreground hover:text-foreground"
+            onClick={handleSelectAll}
+          >
+            {isAllSelected ? (
+              <>
+                <CheckSquare size={15} className="text-brand" />
+                <span className="text-xs">Unselect all</span>
+              </>
+            ) : (
+              <>
+                <Square size={15} />
+                <span className="text-xs">Select all ({allIds.length})</span>
+              </>
+            )}
+          </Button>
 
           <div className="flex items-center gap-2 ml-auto">
             {pinWarning && (
@@ -94,7 +145,12 @@ export default function Navbar({ onSearch, pinnedCount, activeView }) {
             {/* Trash view actions */}
             {isTrashed ? (
               <>
-                <Button variant="outline" size="sm" className="gap-2 hover:cursor-pointer" onClick={handleBulkRestore}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 hover:cursor-pointer"
+                  onClick={handleBulkRestore}
+                >
                   <RotateCcw size={14} /> Restore
                 </Button>
                 <Button
@@ -110,20 +166,40 @@ export default function Navbar({ onSearch, pinnedCount, activeView }) {
               <>
                 {/* Pin/Unpin — hidden in archive view since archived notes shouldn't be pinned */}
                 {!isArchived && (
-                  <Button variant="outline" size="sm" className="gap-2 hover:cursor-pointer" onClick={handleBulkPin}>
-                    {isPinned
-                      ? <><PinOff size={14} /> Unpin</>
-                      : <><Pin size={14} /> Pin</>
-                    }
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 hover:cursor-pointer"
+                    onClick={handleBulkPin}
+                  >
+                    {isPinned ? (
+                      <>
+                        <PinOff size={14} /> Unpin
+                      </>
+                    ) : (
+                      <>
+                        <Pin size={14} /> Pin
+                      </>
+                    )}
                   </Button>
                 )}
 
                 {/* Archive/Unarchive */}
-                <Button variant="outline" size="sm" className="gap-2 hover:cursor-pointer" onClick={handleBulkArchive}>
-                  {isArchived
-                    ? <><ArchiveX size={14} /> Unarchive</>
-                    : <><Archive size={14} /> Archive</>
-                  }
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 hover:cursor-pointer"
+                  onClick={handleBulkArchive}
+                >
+                  {isArchived ? (
+                    <>
+                      <ArchiveX size={14} /> Unarchive
+                    </>
+                  ) : (
+                    <>
+                      <Archive size={14} /> Archive
+                    </>
+                  )}
                 </Button>
 
                 {/* Delete — not shown in trash view since we handle that above */}
