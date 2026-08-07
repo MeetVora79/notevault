@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { clearSelection, selectAll, exitSelectionMode } from "@/features/notes/selectionSlice";
+import {
+  clearSelection,
+  selectAll,
+  exitSelectionMode,
+} from "@/features/notes/selectionSlice";
 import {
   useTogglePinMutation,
   useToggleArchiveMutation,
@@ -32,10 +36,13 @@ export default function Navbar({
   activeView,
   onViewChange,
   currentNotes = [],
+  isSearching = false,
 }) {
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
-  const isSelectionMode = useSelector((state) => state.selection.isSelectionMode);
+  const isSelectionMode = useSelector(
+    (state) => state.selection.isSelectionMode,
+  );
   const isSelecting = isSelectionMode;
 
   const allIds = currentNotes.map((n) => n._id);
@@ -223,9 +230,14 @@ export default function Navbar({
           />
           <Input
             placeholder="Search notes..."
-            className="pl-9 h-9 bg-muted/50 border-transparent shadow-sm focus:bg-background focus:border-border transition-all"
+            className="pl-9 h-9 shadow-sm bg-muted/50 border-transparent focus:bg-background focus:border-border transition-all"
             onChange={(e) => onSearch(e.target.value)}
           />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="w-3.5 h-3.5 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+            </div>
+          )}
         </div>
       )}
     </header>

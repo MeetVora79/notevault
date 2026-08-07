@@ -1,5 +1,7 @@
 import asyncHandler from "express-async-handler";
 import { getGeminiModel } from "../config/gemini.js";
+import { getNotesCollection } from "../config/chroma.js";
+import { generateEmbedding } from "../utils/generateEmbedding.js";
 import Note from "../models/Note.js";
 
 // @desc   Generate a title for a note using Gemini
@@ -74,4 +76,48 @@ ${content.trim()}`;
   }
 
   res.status(200).json({ success: true, summary });
+});
+
+// @desc   Semantic search across notes
+// @route  POST /api/ai/search
+// @access Private
+export const semanticSearch = asyncHandler(async (req, res) => {
+  const { query } = req.body;
+
+  if (!query?.trim()) {
+    res.status(400);
+    throw new Error("Search query is required");
+  }
+
+  // Embed the search query
+  const queryEmbedding = await generateEmbedding(query);
+
+  // Search ChromaDB for nearest notes
+  const collection = await getNotesCollection();
+  const results = await collection.query({
+    queryEmbeddings: [queryEmbedding],
+    nResults: 10,
+    where: {}, // no metadata filter for now
+  });
+
+  const noteIds = results.ids[0];
+
+  if (!noteIds?.length) {
+    return res.status(200).json({ success: true, notes: [] });
+  }
+
+  // Fetch full notes from MongoDB — filter by user for security
+  const notes = await Note.find({
+    _id: { $in: noteIds },
+    user: req.user._id,
+    isTrashed: false,
+    isArchived: false,
+  });
+
+  // Return in ChromaDB's ranked order (most similar first)
+  const rankedNotes = noteIds
+    .map((id) => notes.find((n) => n._id.toString() === id))
+    .filter(Boolean);
+
+  res.status(200).json({ success: true, notes: rankedNotes });
 });

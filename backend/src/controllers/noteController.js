@@ -1,5 +1,6 @@
 import asyncHandler from "express-async-handler";
 import Note from "../models/Note.js";
+import { addEmbeddingJob } from "../queues/noteQueue.js";
 
 // @desc   Create a new note
 // @route  POST /api/notes
@@ -13,6 +14,10 @@ export const createNote = asyncHandler(async (req, res) => {
     content: content || "",
     labels: labels || [],
   });
+
+  if (note.content?.trim()) {
+    await addEmbeddingJob(note._id.toString(), note.content, note.title);
+  }
 
   res.status(201).json({ success: true, note });
 });
@@ -74,6 +79,12 @@ export const updateNote = asyncHandler(async (req, res) => {
   }
 
   await note.save();
+
+  // Re-embed if content changed
+  if (content !== undefined && note.content?.trim()) {
+    console.log("📝 Queuing embedding job for updated note:", note._id.toString());
+    await addEmbeddingJob(note._id.toString(), note.content, note.title);
+  }
 
   res.status(200).json({ success: true, note });
 });
@@ -156,7 +167,10 @@ export const deleteNotePermanently = asyncHandler(async (req, res) => {
 // @route  POST /api/notes/:id/copy
 // @access Private
 export const copyNote = asyncHandler(async (req, res) => {
-  const original = await Note.findOne({ _id: req.params.id, user: req.user._id });
+  const original = await Note.findOne({
+    _id: req.params.id,
+    user: req.user._id,
+  });
   if (!original) {
     res.status(404);
     throw new Error("Note not found");

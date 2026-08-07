@@ -16,7 +16,14 @@ export const aiApi = api.injectEndpoints({
         body,
       }),
     }),
+    semanticSearch: builder.mutation({
+      query: (body) => ({
+        url: "/ai/search",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
-export const { useGenerateTitleMutation, useSummarizeNoteMutation } = aiApi;
+export const { useGenerateTitleMutation, useSummarizeNoteMutation, useSemanticSearchMutation } = aiApi;

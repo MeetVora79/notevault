@@ -6,9 +6,16 @@ import Navbar from "@/components/layout/Navbar";
 import NoteComposer from "@/components/notes/NoteComposer";
 import NoteGrid from "@/components/notes/NoteGrid";
 import NoteEditorDialog from "@/components/notes/NoteEditorDialog";
-import { clearSelection, exitSelectionMode } from "@/features/notes/selectionSlice";
+import {
+  clearSelection,
+  exitSelectionMode,
+} from "@/features/notes/selectionSlice";
+import { useSemanticSearchMutation } from "@/features/ai/aiApi";
 
 export default function Dashboard() {
+  const [semanticSearch] = useSemanticSearchMutation();
+  const [semanticResults, setSemanticResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [activeView, setActiveView] = useState("all");
   const [editingNote, setEditingNote] = useState(null);
   const [search, setSearch] = useState("");
@@ -29,6 +36,9 @@ export default function Dashboard() {
   const { data, isLoading } = useGetNotesQuery(queryParams);
 
   const notes = useMemo(() => {
+    // Use semantic search results if available
+  if (semanticResults !== null) return semanticResults;
+
     let list = data?.notes || [];
     if (activeView === "pinned") list = list.filter((n) => n.isPinned);
     if (activeView.startsWith("label:")) {
@@ -45,7 +55,7 @@ export default function Dashboard() {
       );
     }
     return list;
-  }, [data, activeView, search]);
+  }, [data, activeView, search, semanticResults]);
 
   const pinnedCount = useMemo(
     () => (data?.notes || []).filter((n) => n.isPinned).length,
@@ -58,6 +68,23 @@ export default function Dashboard() {
     return Array.from(set);
   }, [data]);
 
+  const handleSearch = async (query) => {
+    setSearch(query);
+    if (query.trim().length > 3) {
+      setIsSearching(true);
+      try {
+        const result = await semanticSearch({ query }).unwrap();
+        setSemanticResults(result.notes);
+      } catch {
+        setSemanticResults(null);
+      } finally {
+        setIsSearching(false);
+      }
+    } else {
+      setSemanticResults(null);
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar
@@ -67,11 +94,12 @@ export default function Dashboard() {
       />
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar
-          onSearch={setSearch}
+          onSearch={handleSearch}
           pinnedCount={pinnedCount}
           activeView={activeView}
           onViewChange={handleViewChange}
           currentNotes={notes}
+          isSearching={isSearching}
         />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-6 py-8">
@@ -82,7 +110,7 @@ export default function Dashboard() {
             )}
             <NoteGrid
               notes={notes}
-              isLoading={isLoading}
+              isLoading={isLoading || isSearching}
               view={activeView}
               onNoteClick={setEditingNote}
             />
