@@ -147,7 +147,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
         <LabelInput labels={labels} onChange={setLabels} />
 
         {/* Footer */}
-        <DialogFooter className="flex items-center justify-between sm:justify-between">
+        <DialogFooter className="flex flex-row items-center justify-between sm:justify-between">
           <Button
             variant="ghost"
             size="sm"

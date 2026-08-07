@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSelect } from "@/features/notes/selectionSlice";
 import {
@@ -18,8 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LabelPopover from "./LabelPopover";
-import SummaryPopover from "./SummaryPopover";
+import LabelDialog from "./LabelPopover";
+import SummaryDialog from "./SummaryPopover";
 import {
   Pin,
   Archive,
@@ -49,10 +49,13 @@ function ActionBtn({ label, onClick, children, destructive }) {
 
 export default function NoteCard({ note, view, onClick }) {
   const dispatch = useDispatch();
-  const popoverOpen = useRef(false);
   const selectedIds = useSelector((state) => state.selection.selectedIds);
   const isSelected = selectedIds.includes(note._id);
   const isSelecting = selectedIds.length > 0;
+
+  const [labelOpen, setLabelOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [togglePin] = useTogglePinMutation();
   const [toggleArchive] = useToggleArchiveMutation();
@@ -69,7 +72,7 @@ export default function NoteCard({ note, view, onClick }) {
   const isTrashView = view === "trashed";
 
   const handleCardClick = () => {
-    if (popoverOpen.current) return;
+    if (dropdownOpen || labelOpen || summaryOpen) return;
     if (isSelecting) {
       dispatch(toggleSelect(note._id));
     } else {
@@ -83,221 +86,222 @@ export default function NoteCard({ note, view, onClick }) {
   };
 
   return (
-    <div
-      onClick={handleCardClick}
-      className={`group relative rounded-xl border bg-card cursor-pointer transition-all break-inside-avoid mb-4 overflow-hidden
+    <>
+      {/* Dialogs rendered outside card — portal into body, zero event conflict */}
+      <LabelDialog note={note} open={labelOpen} onOpenChange={setLabelOpen} />
+      <SummaryDialog
+        note={note}
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+      />
+      <div
+        onClick={handleCardClick}
+        className={`group relative rounded-xl border bg-card cursor-pointer transition-all break-inside-avoid mb-4 overflow-hidden
         ${
           isSelected
             ? "border-brand shadow-md shadow-brand/10"
             : "border-border hover:border-brand/40 hover:shadow-md"
         }`}
-    >
-      {/* Always-visible filled pin — only when pinned */}
-      {/* {note.isPinned && !isTrashView && (
-        <div className="absolute top-2.5 right-2.5 z-10">
-          <Pin size={15} className="text-brand fill-amber-50 rotate-45" />
-        </div>
-      )} */}
-      {note.isPinned && !isTrashView && (
-        <div className="absolute top-2 right-2 z-10">
-          <ActionBtn
-            label={note.isPinned ? "Unpin" : "Pin"}
-            onClick={(e) => stop(e, () => togglePin(note._id))}
-          >
-            <Pin
-              className="transition-transform duration-200 rotate-45 fill-white"
-              size={14}
-              fill={note.isPinned ? "currentColor" : "none"}
-            />
-          </ActionBtn>
-        </div>
-      )}
-
-      {!isTrashView && !note.isPinned && (
-        <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 cursor-pointer">
-          <ActionBtn
-            label={note.isPinned ? "Unpin" : "Pin"}
-            onClick={(e) => stop(e, () => togglePin(note._id))}
-          >
-            <Pin size={14} fill={note.isPinned ? "currentColor" : "none"} />
-          </ActionBtn>
-        </div>
-      )}
-
-      {/* Checkbox — top left, visible on hover or when any card is selected */}
-      <div
-        className={`absolute bottom-3 left-3 z-10 transition-opacity ${
-          isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-        }`}
-        onClick={(e) => stop(e, () => dispatch(toggleSelect(note._id)))}
       >
-        <div
-          className={`w-4.5 h-4.5 rounded-sm border-2 flex items-center justify-center transition-colors ${
-            isSelected
-              ? "bg-brand border-brand"
-              : "border-muted-foreground/50 bg-background"
-          }`}
-        >
-          {isSelected && (
-            <svg viewBox="0 0 8 6" className="w-2.5 h-2.5 fill-amber-50">
-              <path
-                d="M1 3l2 2 4-4"
-                stroke="white"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {/* Always-visible filled pin — only when pinned */}
+        {note.isPinned && !isTrashView && (
+          <div className="absolute top-2 right-2 z-10">
+            <ActionBtn
+              label={note.isPinned ? "Unpin" : "Pin"}
+              onClick={(e) => stop(e, () => togglePin(note._id))}
+            >
+              <Pin
+                className="transition-transform duration-200 rotate-45 fill-white"
+                size={14}
+                fill={note.isPinned ? "currentColor" : "none"}
               />
-            </svg>
-          )}
-        </div>
-      </div>
+            </ActionBtn>
+          </div>
+        )}
 
-      {/* Card content */}
-      <div className="p-4 pt-3">
-        {note.title && (
-          <h3
-            className={`font-display font-medium text-sm mb-1.5 line-clamp-2 ${
-              note.isPinned ? "pr-5" : ""
+        {!isTrashView && !note.isPinned && (
+          <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 cursor-pointer">
+            <ActionBtn
+              label={note.isPinned ? "Unpin" : "Pin"}
+              onClick={(e) => stop(e, () => togglePin(note._id))}
+            >
+              <Pin size={14} fill={note.isPinned ? "currentColor" : "none"} />
+            </ActionBtn>
+          </div>
+        )}
+
+        {/* Checkbox — bottom left, visible on hover or when any card is selected */}
+        <div
+          className={`absolute bottom-3 left-3 z-10 transition-opacity ${
+            isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+          onClick={(e) => stop(e, () => dispatch(toggleSelect(note._id)))}
+        >
+          <div
+            className={`w-4.5 h-4.5 rounded-sm border-2 flex items-center justify-center transition-colors ${
+              isSelected
+                ? "bg-brand border-brand"
+                : "border-muted-foreground/50 bg-background"
             }`}
           >
-            {note.title}
-          </h3>
-        )}
-        <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-6">
-          {note.content}
-        </p>
-
-        {note.labels?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3">
-            {note.labels.map((label) => (
-              <Badge
-                key={label}
-                variant="secondary"
-                className="text-xs font-normal"
-              >
-                {label}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        {note.aiTitleGenerated && (
-          <Badge className="mt-2 gap-1 bg-ai/10 text-ai border border-ai/20 text-xs font-mono font-normal hover:bg-ai/10">
-            <Sparkles size={11} /> AI title
-          </Badge>
-        )}
-      </div>
-
-      {/* Action strip — slides up on hover, sits below content not over it */}
-      {
-        <div
-          className={`flex items-center justify-end gap-0.5 px-2 pb-2 opacity-0 ${isSelecting ? "" : " group-hover:opacity-100"} transition-opacity`}
-        >
-          <div className="flex items-center gap-0.5">
-            {isTrashView ? (
-              <>
-                <ActionBtn
-                  label="Restore"
-                  onClick={(e) => stop(e, () => restoreNote(note._id))}
-                >
-                  <RotateCcw size={14} />
-                </ActionBtn>
-                <ActionBtn
-                  label="Delete forever"
-                  destructive
-                  onClick={(e) => stop(e, () => deleteForever(note._id))}
-                >
-                  <Delete size={14} />
-                </ActionBtn>
-              </>
-            ) : (
-              <>
-                <ActionBtn
-                  label={note.isArchived ? "Unarchive" : "Archive"}
-                  onClick={(e) => stop(e, () => toggleArchive(note._id))}
-                >
-                  <Archive size={14} className="cursor-pointer" />
-                </ActionBtn>
-              </>
+            {isSelected && (
+              <svg viewBox="0 0 8 6" className="w-2.5 h-2.5 fill-amber-50">
+                <path
+                  d="M1 3l2 2 4-4"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             )}
           </div>
-          {/* Kebab menu — only on non-trash views */}
-          {!isTrashView && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+        </div>
+
+        {/* Card content */}
+        <div className="p-4 pt-3">
+          {note.title && (
+            <h3
+              className={`font-display font-medium text-sm mb-1.5 line-clamp-2 ${
+                note.isPinned ? "pr-5" : ""
+              }`}
+            >
+              {note.title}
+            </h3>
+          )}
+          <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-6">
+            {note.content}
+          </p>
+
+          {note.labels?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-3">
+              {note.labels.map((label) => (
+                <Badge
+                  key={label}
+                  variant="secondary"
+                  className="text-xs font-normal"
+                >
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {note.aiTitleGenerated && (
+            <Badge className="mt-2 gap-1 bg-ai/10 text-ai border border-ai/20 text-xs font-mono font-normal hover:bg-ai/10">
+              <Sparkles size={11} /> AI title
+            </Badge>
+          )}
+        </div>
+
+        {/* Action strip — slides up on hover, sits below content not over it */}
+        {
+          <div
+            className={`flex items-center justify-end gap-0.5 px-2 pb-2 opacity-0 ${isSelecting ? "" : " group-hover:opacity-100"} transition-opacity`}
+          >
+            <div className="flex items-center gap-0.5">
+              {isTrashView ? (
+                <>
+                  <ActionBtn
+                    label="Restore"
+                    onClick={(e) => stop(e, () => restoreNote(note._id))}
+                  >
+                    <RotateCcw size={14} />
+                  </ActionBtn>
+                  <ActionBtn
+                    label="Delete forever"
+                    destructive
+                    onClick={(e) => stop(e, () => deleteForever(note._id))}
+                  >
+                    <Delete size={14} />
+                  </ActionBtn>
+                </>
+              ) : (
+                <>
+                  <ActionBtn
+                    label={note.isArchived ? "Unarchive" : "Archive"}
+                    onClick={(e) => stop(e, () => toggleArchive(note._id))}
+                  >
+                    <Archive size={14} className="cursor-pointer" />
+                  </ActionBtn>
+                </>
+              )}
+            </div>
+
+            {/* Kebab menu — only on non-trash views */}
+            {!isTrashView && (
+              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDropdownOpen(true);
+                    }}
+                  >
+                    <MoreVertical size={14} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <MoreVertical size={14} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {/* Summarize */}
-                <SummaryPopover note={note} onOpenChange={(open) => { popoverOpen.current = open; }}>
+                  {/* Summarize */}
                   <DropdownMenuItem
-                    onSelect={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setTimeout(() => setSummaryOpen(true), 50);
+                    }}
                   >
                     <Sparkles size={14} className="mr-2 text-ai" />
                     Summarize note
                   </DropdownMenuItem>
-                </SummaryPopover>
 
-                <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
 
-                {/* Add label */}
-                <LabelPopover note={note} onOpenChange={(open) => { popoverOpen.current = open; }}>
+                  {/* Add label */}
                   <DropdownMenuItem
-                    onSelect={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setTimeout(() => setLabelOpen(true), 50);
+                    }}
                   >
                     <Tag size={14} className="mr-2" />
                     Add label
                   </DropdownMenuItem>
-                </LabelPopover>
 
-                {/* Copy to clipboard */}
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCopyToClipboard();
-                  }}
-                >
-                  <ClipboardCopy size={14} className="mr-2" />
-                  Copy to clipboard
-                </DropdownMenuItem>
+                  {/* Copy to clipboard */}
+                  <DropdownMenuItem onClick={handleCopyToClipboard}>
+                    <ClipboardCopy size={14} className="mr-2" />
+                    Copy to clipboard
+                  </DropdownMenuItem>
 
-                {/* Make a copy */}
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyNote(note._id);
-                  }}
-                >
-                  <Copy size={14} className="mr-2" />
-                  Make a copy
-                </DropdownMenuItem>
+                  {/* Make a copy */}
+                  <DropdownMenuItem onClick={() => copyNote(note._id)}>
+                    <Copy size={14} className="mr-2" />
+                    Make a copy
+                  </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
 
-                {/* Delete */}
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    trashNote(note._id);
-                  }}
-                >
-                  <Trash2 size={14} className="mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      }
-    </div>
+                  {/* Delete */}
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => trashNote(note._id)}
+                  >
+                    <Trash2 size={14} className="mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        }
+      </div>
+    </>
   );
 }

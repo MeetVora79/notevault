@@ -1,16 +1,16 @@
 import { useState } from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useUpdateNoteMutation } from "@/features/notes/noteApi";
-import { X } from "lucide-react";
+import { X, Tag } from "lucide-react";
 
-export default function LabelPopover({ note, children, onOpenChange }) {
-  const [open, setOpen] = useState(false);
+export default function LabelDialog({ note, open, onOpenChange }) {
   const [draft, setDraft] = useState("");
   const [labels, setLabels] = useState(note.labels || []);
   const [updateNote] = useUpdateNoteMutation();
@@ -38,46 +38,40 @@ export default function LabelPopover({ note, children, onOpenChange }) {
   };
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(open) => {
-        onOpenChange?.(open);
-        setOpen(open)
-      }}
-    >
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="start">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Labels</p>
-        <div className="flex flex-wrap gap-1.5 mb-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Tag size={16} /> Add labels
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex flex-wrap gap-1.5 min-h-8">
           {labels.map((label) => (
-            <Badge
-              key={label}
-              variant="secondary"
-              className="gap-1 pr-1 font-normal text-xs"
-            >
-              #{label}
+            <Badge key={label} variant="secondary" className="gap-1 pr-1 font-normal">
+              {label}
               <button
                 onClick={() => removeLabel(label)}
                 className="hover:bg-muted-foreground/20 rounded-full p-0.5"
               >
-                <X size={9} />
+                <X size={10} />
               </button>
             </Badge>
           ))}
           {labels.length === 0 && (
-            <p className="text-xs text-muted-foreground">No labels yet</p>
+            <p className="text-sm text-muted-foreground">No labels yet</p>
           )}
         </div>
+
         <Input
           autoFocus
-          placeholder="Add label, press Enter"
+          placeholder="Type a label and press Enter"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={() => draft && addLabel(draft)}
-          className="h-7 text-xs"
         />
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }

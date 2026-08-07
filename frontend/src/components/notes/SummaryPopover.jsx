@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useSummarizeNoteMutation } from "@/features/ai/aiApi";
 import { Sparkles, Loader2, RotateCcw } from "lucide-react";
 
-export default function SummaryPopover({ note, children, onOpenChange }) {
-  const [open, setOpen] = useState(false);
+export default function SummaryDialog({ note, open, onOpenChange }) {
   const [summary, setSummary] = useState(note.summary || "");
   const [summarizeNote, { isLoading }] = useSummarizeNoteMutation();
 
@@ -26,64 +26,59 @@ export default function SummaryPopover({ note, children, onOpenChange }) {
     }
   };
 
-  const handleOpen = (isOpen) => {
-    setOpen(isOpen);
-    // Auto-generate if no summary exists and popover opens
-    if (isOpen && !summary && note.content?.trim()) {
+  useEffect(() => {
+    if (open && !summary && note.content?.trim()) {
       handleSummarize(false);
     }
-  };
+  }, [open]);
 
   return (
-    <Popover open={open} onOpenChange={handleOpen}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-72 p-3" align="start">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-ai flex items-center gap-1.5">
-            <Sparkles size={11} /> AI Summary
-          </p>
-          {summary && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground gap-1"
-              onClick={() => handleSummarize(true)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 size={10} className="animate-spin" />
-              ) : (
-                <RotateCcw size={10} />
-              )}
-              Regenerate
-            </Button>
-          )}
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Sparkles size={16} className="text-ai" /> AI Summary
+          </DialogTitle>
+        </DialogHeader>
 
         {isLoading && !summary ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-            <Loader2 size={12} className="animate-spin" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+            <Loader2 size={14} className="animate-spin" />
             Generating summary...
           </div>
         ) : summary ? (
-          <p className="text-xs text-muted-foreground leading-relaxed bg-ai/5 border border-ai/15 rounded-lg px-3 py-2">
-            {summary}
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground leading-relaxed bg-ai/5 border border-ai/15 rounded-lg px-3 py-3">
+              {isLoading ? "Regenerating..." : summary}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => handleSummarize(true)}
+              disabled={isLoading}
+            >
+              {isLoading
+                ? <Loader2 size={13} className="animate-spin" />
+                : <RotateCcw size={13} />
+              }
+              Regenerate
+            </Button>
+          </div>
         ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">No summary yet.</p>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">No summary yet.</p>
             <Button
               size="sm"
-              variant="outline"
-              className="w-full gap-2 text-xs h-7"
+              className="gap-2"
               onClick={() => handleSummarize(false)}
               disabled={!note.content?.trim()}
             >
-              <Sparkles size={11} /> Generate summary
+              <Sparkles size={13} /> Generate summary
             </Button>
           </div>
         )}
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }
