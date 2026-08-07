@@ -123,7 +123,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground gap-1 cursor-pointer"
                   onClick={() => handleSummarize(true)}
                   disabled={isSummarizing}
                 >
@@ -151,12 +151,12 @@ export default function NoteEditorDialog({ note, open, onClose }) {
           <Button
             variant="ghost"
             size="sm"
-            className="text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive cursor-pointer"
             onClick={handleDelete}
           >
             <Trash2 size={14} className="mr-2" /> Delete
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+          <Button className="cursor-pointer" size="sm" onClick={handleSave} disabled={isSaving}>
             {isSaving ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>

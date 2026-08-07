@@ -40,7 +40,7 @@ export default function LabelInput({ labels, onChange }) {
             {label}
             <button
               onClick={() => removeLabel(label)}
-              className="hover:bg-muted-foreground/20 rounded-full p-0.5"
+              className="hover:bg-muted-foreground/20 rounded-full p-0.5 cursor-pointer"
             >
               <X size={10} />
             </button>

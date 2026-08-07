@@ -50,7 +50,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
     const button = (
       <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium cursor-pointer transition-colors ${
           collapsed ? "justify-center" : ""
         } ${
           active
@@ -90,7 +90,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 shrink-0"
+          className="h-7 w-7 shrink-0 cursor-pointer"
           onClick={() => setCollapsed((c) => !c)}
         >
           {collapsed ? (
@@ -124,7 +124,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
                 <button
                   key={label}
                   onClick={() => onViewChange(`label:${label}`)}
-                  className={`w-full flex items-center gap-3 text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  className={`w-full flex items-center gap-3 text-left px-3 py-2 rounded-md text-sm cursor-pointer transition-colors ${
                     collapsed ? "justify-center" : ""
                   } ${
                     activeView === `label:${label}`
@@ -144,7 +144,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
               return collapsed ? (
                 <Tooltip key={label}>
                   <TooltipTrigger asChild>{button}</TooltipTrigger>
-                  <TooltipContent side="right">#{label}</TooltipContent>
+                  <TooltipContent side="right">{label}</TooltipContent>
                 </Tooltip>
               ) : (
                 button
@@ -167,7 +167,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 cursor-pointer"
               onClick={() => dispatch(toggleTheme())}
             >
               {mode === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -177,7 +177,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 cursor-pointer"
             onClick={() => dispatch(toggleTheme())}
           >
             {mode === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -209,7 +209,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 cursor-pointer"
                 onClick={handleLogout}
               >
                 <LogOut size={16} />
@@ -221,7 +221,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
           <Button
             variant="outline"
             size="sm"
-            className="w-full"
+            className="w-full cursor-pointer"
             onClick={handleLogout}
           >
             <LogOut size={14} className="mr-2" /> Log out
