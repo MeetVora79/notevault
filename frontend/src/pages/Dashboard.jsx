@@ -1,16 +1,14 @@
 import { useState, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useGetNotesQuery } from "@/features/notes/noteApi";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import NoteComposer from "@/components/notes/NoteComposer";
 import NoteGrid from "@/components/notes/NoteGrid";
 import NoteEditorDialog from "@/components/notes/NoteEditorDialog";
-import {
-  clearSelection,
-  exitSelectionMode,
-} from "@/features/notes/selectionSlice";
+import { exitSelectionMode } from "@/features/notes/selectionSlice";
 import { useSemanticSearchMutation } from "@/features/ai/aiApi";
+import ChatPanel from "@/components/chat/ChatPanel";
 
 export default function Dashboard() {
   const [semanticSearch] = useSemanticSearchMutation();
@@ -19,6 +17,7 @@ export default function Dashboard() {
   const [activeView, setActiveView] = useState("all");
   const [editingNote, setEditingNote] = useState(null);
   const [search, setSearch] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
   const dispatch = useDispatch();
 
   const handleViewChange = (view) => {
@@ -37,7 +36,7 @@ export default function Dashboard() {
 
   const notes = useMemo(() => {
     // Use semantic search results if available
-  if (semanticResults !== null) return semanticResults;
+    if (semanticResults !== null) return semanticResults;
 
     let list = data?.notes || [];
     if (activeView === "pinned") list = list.filter((n) => n.isPinned);
@@ -94,6 +93,8 @@ export default function Dashboard() {
           onViewChange={handleViewChange}
           currentNotes={notes}
           isSearching={isSearching}
+          onChatToggle={() => setChatOpen((prev) => !prev)}
+          chatOpen={chatOpen}
         />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-6 py-8">
@@ -116,6 +117,7 @@ export default function Dashboard() {
         open={!!editingNote}
         onClose={() => setEditingNote(null)}
       />
+      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }

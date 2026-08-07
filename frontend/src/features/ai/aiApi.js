@@ -23,7 +23,15 @@ export const aiApi = api.injectEndpoints({
         body,
       }),
     }),
+    chatWithNotes: builder.mutation({
+      query: (body) => ({ url: "/ai/chat", method: "POST", body }),
+    }),
   }),
 });
 
-export const { useGenerateTitleMutation, useSummarizeNoteMutation, useSemanticSearchMutation } = aiApi;
+export const {
+  useGenerateTitleMutation,
+  useSummarizeNoteMutation,
+  useSemanticSearchMutation,
+  useChatWithNotesMutation,
+} = aiApi;

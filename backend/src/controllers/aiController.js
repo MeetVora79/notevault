@@ -121,3 +121,90 @@ export const semanticSearch = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, notes: rankedNotes });
 });
+
+// @desc   RAG Chat — answer questions using note context
+// @route  POST /api/ai/chat
+// @access Private
+export const chatWithNotes = asyncHandler(async (req, res) => {
+  const { message, history = [] } = req.body;
+
+  if (!message?.trim()) {
+    res.status(400);
+    throw new Error("Message is required");
+  }
+
+  // Step 1 — embed the user's question
+  const queryEmbedding = await generateEmbedding(message);
+
+  // Step 2 — find most relevant notes from ChromaDB
+  const collection = await getNotesCollection();
+  const results = await collection.query({
+    queryEmbeddings: [queryEmbedding],
+    nResults: 5,
+  });
+
+  const noteIds = results.ids[0] || [];
+
+  // Step 3 — fetch full note content from MongoDB (security: filter by user)
+  const relevantNotes = await Note.find({
+    _id: { $in: noteIds },
+    user: req.user._id,
+    isTrashed: false,
+    isArchived: false,
+  });
+
+  if (!relevantNotes.length) {
+    return res.status(200).json({
+      success: true,
+      answer:
+        "I couldn't find any relevant notes to answer your question. Try adding some notes first.",
+      sources: [],
+    });
+  }
+
+  // Step 4 — build context from relevant notes
+  const context = relevantNotes
+    .map((note, i) => {
+      const title = note.title || "Untitled note";
+      return `[Note ${i + 1}] ${title}\n${note.content}`;
+    })
+    .join("\n\n---\n\n");
+
+  // Step 5 — build conversation history for multi-turn chat
+  const historyText = history
+    .slice(-6) // last 3 exchanges
+    .map((h) => `${h.role === "user" ? "User" : "Assistant"}: ${h.content}`)
+    .join("\n");
+
+  // Step 6 — generate answer with Gemini
+  const model = getGeminiModel();
+
+  const prompt = `You are a helpful AI assistant that answers questions based on the user's personal notes.
+
+CONTEXT — relevant notes from the user's knowledge base:
+${context}
+
+${historyText ? `CONVERSATION HISTORY:\n${historyText}\n` : ""}
+
+INSTRUCTIONS:
+- Answer the user's question using ONLY information from the notes above
+- If the notes don't contain enough information, say so clearly
+- Be concise and direct — 2-4 sentences unless more detail is needed
+- Never make up information not present in the notes
+- Reference specific notes naturally (e.g. "According to your trip planning note...")
+
+User question: ${message}
+
+Answer:`;
+
+  const result = await model.generateContent(prompt);
+  const answer = result.response.text().trim();
+
+  // Step 7 — return answer + source note references
+  const sources = relevantNotes.map((note) => ({
+    id: note._id,
+    title: note.title || "Untitled note",
+  }));
+
+  res.status(200).json({ success: true, answer, sources });
+});

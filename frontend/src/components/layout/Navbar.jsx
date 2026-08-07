@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearSelection,
@@ -26,6 +25,7 @@ import {
   Delete,
   CheckSquare,
   Square,
+  MessageSquare,
 } from "lucide-react";
 
 export default function Navbar({
@@ -34,6 +34,8 @@ export default function Navbar({
   onViewChange,
   currentNotes = [],
   isSearching = false,
+  onChatToggle,
+  chatOpen,
 }) {
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
@@ -131,7 +133,6 @@ export default function Navbar({
           </Button>
 
           <div className="flex items-center gap-2 ml-auto">
-
             {/* Trash view actions */}
             {isTrashed ? (
               <>
@@ -206,21 +207,33 @@ export default function Navbar({
           </div>
         </div>
       ) : (
-        <div className="relative w-full max-w-md">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-          />
-          <Input
-            placeholder="Search notes..."
-            className="pl-9 h-9 shadow-sm bg-muted/50 border-transparent focus:bg-background focus:border-border transition-all"
-            onChange={(e) => onSearch(e.target.value)}
-          />
-          {isSearching && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="w-3.5 h-3.5 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
-            </div>
-          )}
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div className="relative w-full max-w-md">
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+            <Input
+              placeholder="Search notes..."
+              className="pl-9 h-9 shadow-sm bg-muted/50 border-transparent focus:bg-background focus:border-border transition-all"
+              onChange={(e) => onSearch(e.target.value)}
+            />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="w-3.5 h-3.5 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
+          {/* Chat toggle button */}
+          <Button
+            variant={chatOpen ? "default" : "ghost"}
+            // size="icon"
+            className={`gap-1 cursor-pointer bg-accent shrink-0 ${chatOpen ? "bg-brand hover:bg-brand/90" : ""}`}
+            onClick={onChatToggle}
+          >
+            <span>Chat</span>
+            <MessageSquare size={16} />
+          </Button>
         </div>
       )}
     </header>
