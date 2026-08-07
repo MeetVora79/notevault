@@ -28,11 +28,8 @@ import {
   Square,
 } from "lucide-react";
 
-const MAX_PINS = 3;
-
 export default function Navbar({
   onSearch,
-  pinnedCount,
   activeView,
   onViewChange,
   currentNotes = [],
@@ -54,7 +51,6 @@ export default function Navbar({
   const [trashNote] = useTrashNoteMutation();
   const [restoreNote] = useRestoreNoteMutation();
   const [deleteForever] = useDeleteNotePermanentlyMutation();
-  const [pinWarning, setPinWarning] = useState(false);
 
   const isTrashed = activeView === "trashed";
   const isPinned = activeView === "pinned";
@@ -70,19 +66,11 @@ export default function Navbar({
 
   const handleBulkPin = async () => {
     if (isPinned) {
-      // In pinned view — unpin all selected
       await Promise.all(selectedIds.map((id) => togglePin(id)));
       dispatch(clearSelection());
       return;
     }
-    const slotsLeft = MAX_PINS - pinnedCount;
-    if (slotsLeft <= 0) {
-      setPinWarning(true);
-      setTimeout(() => setPinWarning(false), 3000);
-      return;
-    }
-    const toPin = selectedIds.slice(0, slotsLeft);
-    await Promise.all(toPin.map((id) => togglePin(id)));
+    await Promise.all(selectedIds.map((id) => togglePin(id)));
     dispatch(clearSelection());
   };
 
@@ -143,11 +131,6 @@ export default function Navbar({
           </Button>
 
           <div className="flex items-center gap-2 ml-auto">
-            {pinWarning && (
-              <span className="text-xs text-destructive">
-                Max {MAX_PINS} pinned notes reached
-              </span>
-            )}
 
             {/* Trash view actions */}
             {isTrashed ? (

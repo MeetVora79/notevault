@@ -57,11 +57,6 @@ export default function Dashboard() {
     return list;
   }, [data, activeView, search, semanticResults]);
 
-  const pinnedCount = useMemo(
-    () => (data?.notes || []).filter((n) => n.isPinned).length,
-    [data],
-  );
-
   const allLabels = useMemo(() => {
     const set = new Set();
     (data?.notes || []).forEach((n) => n.labels?.forEach((l) => set.add(l)));
@@ -95,7 +90,6 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar
           onSearch={handleSearch}
-          pinnedCount={pinnedCount}
           activeView={activeView}
           onViewChange={handleViewChange}
           currentNotes={notes}
