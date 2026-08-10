@@ -54,7 +54,7 @@ export default function SummaryDialog({ note, open, onOpenChange }) {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="gap-2 cursor-pointer"
               onClick={() => handleSummarize(true)}
               disabled={isLoading}
             >

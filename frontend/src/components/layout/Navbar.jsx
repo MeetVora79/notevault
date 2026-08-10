@@ -116,7 +116,7 @@ export default function Navbar({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2 text-muted-foreground hover:text-foreground"
+            className="gap-2 text-muted-foreground hover:text-foreground cursor-pointer"
             onClick={handleSelectAll}
           >
             {isAllSelected ? (

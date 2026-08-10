@@ -192,7 +192,7 @@ export default function ChatPanel({ open, onClose }) {
                   <button
                     key={q}
                     onClick={() => setInput(q)}
-                    className="text-xs text-left px-3 py-2 rounded-lg border border-border hover:bg-accent hover:border-brand/30 transition-colors text-muted-foreground"
+                    className="text-xs text-left px-3 py-2 rounded-lg border border-border hover:bg-accent hover:border-brand/30 transition-colors text-muted-foreground cursor-pointer"
                   >
                     {q}
                   </button>

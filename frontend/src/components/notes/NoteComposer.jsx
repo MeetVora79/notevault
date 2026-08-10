@@ -94,10 +94,16 @@ export default function NoteComposer() {
 
       {expanded && (
         <div className="flex items-center justify-end gap-2 px-3 pb-3">
-          <Button variant="ghost" size="sm" onClick={handleCancel}>
+          <Button
+            className="cursor-pointer"
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+          >
             Cancel
           </Button>
           <Button
+            className="cursor-pointer"
             size="sm"
             onClick={handleCreate}
             disabled={isSaving || !hasContent}
