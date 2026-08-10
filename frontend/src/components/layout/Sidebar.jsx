@@ -84,7 +84,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
       >
         {!collapsed && (
           <h1 className="font-display font-semibold text-lg tracking-tight">
-            Notes<span className="text-brand">Vault</span>
+            Note<span className="text-brand">Vault</span>
           </h1>
         )}
         <Button

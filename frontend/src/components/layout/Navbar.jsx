@@ -25,7 +25,7 @@ import {
   Delete,
   CheckSquare,
   Square,
-  MessageSquare,
+  BotMessageSquare,
 } from "lucide-react";
 
 export default function Navbar({
@@ -227,12 +227,11 @@ export default function Navbar({
           {/* Chat toggle button */}
           <Button
             variant={chatOpen ? "default" : "ghost"}
-            // size="icon"
-            className={`gap-1 cursor-pointer bg-accent shrink-0 ${chatOpen ? "bg-brand hover:bg-brand/90" : ""}`}
+            className={`gap-1 cursor-pointer bg-accent/70 shrink-0 ${chatOpen ? "bg-brand hover:bg-brand/90" : ""}`}
             onClick={onChatToggle}
           >
             <span>Chat</span>
-            <MessageSquare size={16} />
+            <BotMessageSquare size={16} />
           </Button>
         </div>
       )}

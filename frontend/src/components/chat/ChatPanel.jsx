@@ -235,8 +235,9 @@ export default function ChatPanel({ open, onClose }) {
               className="text-sm h-9"
             />
             <Button
+              variant="ghost"
               size="icon"
-              className="h-9 w-9 shrink-0 bg-amber-50 cursor-pointer hover:bg-brand/90"
+              className="h-9 w-9 shrink-0 bg-accent cursor-pointer hover:bg-brand/90"
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
             >
