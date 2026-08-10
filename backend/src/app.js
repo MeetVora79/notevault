@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import passport from "passport";
+import { initializePassport } from "./config/passport.js";
 
 import aiRoutes from "./routes/aiRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -19,6 +21,8 @@ app.use(
 );
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
+initializePassport();
+app.use(passport.initialize());
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));

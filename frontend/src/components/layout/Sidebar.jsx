@@ -5,6 +5,7 @@ import { logoutLocal } from "@/features/auth/authSlice";
 import { toggleTheme } from "@/features/theme/themeSlice";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { api } from "@/services/api";
 import {
   Tooltip,
   TooltipContent,
@@ -41,6 +42,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
     try {
       await logout().unwrap();
     } finally {
+      dispatch(api.util.resetApiState()); // ← clear cache on logout only
       dispatch(logoutLocal());
     }
   };

@@ -6,6 +6,7 @@ import {
   generateRefreshToken,
   setRefreshTokenCookie,
 } from "../utils/generateTokens.js";
+import passport from "../config/passport.js";
 
 // @desc   Register new user
 // @route  POST /api/auth/register
@@ -134,4 +135,36 @@ export const logoutUser = asyncHandler(async (req, res) => {
 // @route  GET /api/auth/me
 export const getMe = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, user: req.user.toSafeObject() });
+});
+
+// @desc   Redirect to Google OAuth
+// @route  GET /api/auth/google
+export const googleAuth = passport.authenticate("google", {
+  scope: ["profile", "email"],
+  session: false,
+});
+
+// @desc   Google OAuth callback
+// @route  GET /api/auth/google/callback
+export const googleCallback = asyncHandler(async (req, res, next) => {
+  passport.authenticate("google", { session: false }, (err, data) => {
+    if (err || !data) {
+      return res.redirect(
+        `${process.env.CLIENT_URL}/login?error=google_auth_failed`,
+      );
+    }
+
+    const { user, appAccessToken, appRefreshToken } = data;
+
+    res.cookie("refreshToken", appRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.redirect(
+      `${process.env.CLIENT_URL}/auth/callback?token=${appAccessToken}`,
+    );
+  })(req, res, next);
 });
