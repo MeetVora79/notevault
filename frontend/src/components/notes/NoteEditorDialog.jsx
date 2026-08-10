@@ -10,9 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import LabelInput from "./LabelInput";
-import { useUpdateNoteMutation, useTrashNoteMutation } from "@/features/notes/noteApi";
+import {
+  useUpdateNoteMutation,
+  useTrashNoteMutation,
+} from "@/features/notes/noteApi";
 import { useSummarizeNoteMutation } from "@/features/ai/aiApi";
 import { Trash2, Sparkles, Loader2, RotateCcw } from "lucide-react";
+import { useGenerateTitleMutation } from "@/features/ai/aiApi";
 
 export default function NoteEditorDialog({ note, open, onClose }) {
   const [title, setTitle] = useState("");
@@ -23,7 +27,11 @@ export default function NoteEditorDialog({ note, open, onClose }) {
 
   const [updateNote, { isLoading: isSaving }] = useUpdateNoteMutation();
   const [trashNote] = useTrashNoteMutation();
-  const [summarizeNote, { isLoading: isSummarizing }] = useSummarizeNoteMutation();
+  const [summarizeNote, { isLoading: isSummarizing }] =
+    useSummarizeNoteMutation();
+  const [generateTitle, { isLoading: isGenerating }] =
+    useGenerateTitleMutation();
+  const [aiError, setAiError] = useState("");
 
   // Sync state when a different note is opened
   useEffect(() => {
@@ -36,6 +44,20 @@ export default function NoteEditorDialog({ note, open, onClose }) {
       setSummaryVisible(!!note.summary);
     }
   }, [note]);
+
+  const handleAiTitle = async () => {
+    if (!content.trim()) return;
+    setAiError("");
+    try {
+      const result = await generateTitle({
+        content,
+        _t: Date.now(),
+      }).unwrap();
+      setTitle(result.title);
+    } catch {
+      setAiError("Could not generate title. Try again.");
+    }
+  };
 
   const handleSummarize = async (regenerate = false) => {
     try {
@@ -74,18 +96,41 @@ export default function NoteEditorDialog({ note, open, onClose }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="sr-only">Edit note</DialogTitle>
         </DialogHeader>
 
-        {/* Title */}
-        <Input
-          placeholder="Title (optional)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="border-0 shadow-none text-lg font-display font-medium focus-visible:ring-0"
-        />
+        {/* Title + AI button */}
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Title (optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="border-0 shadow-none text-lg font-display font-medium focus-visible:ring-0 flex-1"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={!content.trim() || isGenerating}
+            onClick={handleAiTitle}
+            className={`shrink-0 gap-1.5 text-xs cursor-pointer font-medium transition-colors ${
+              content.trim() && !isGenerating
+                ? "text-ai hover:text-ai hover:bg-ai/10"
+                : "text-muted-foreground"
+            }`}
+          >
+            {isGenerating ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Sparkles size={13} />
+            )}
+            {isGenerating ? "Generating..." : "AI Title"}
+          </Button>
+        </div>
+
+        {aiError && <p className="text-xs text-destructive">{aiError}</p>}
 
         {/* Content */}
         <textarea
@@ -108,10 +153,11 @@ export default function NoteEditorDialog({ note, open, onClose }) {
               onClick={() => handleSummarize(false)}
               disabled={isSummarizing || !content.trim()}
             >
-              {isSummarizing
-                ? <Loader2 size={13} className="animate-spin" />
-                : <Sparkles size={13} />
-              }
+              {isSummarizing ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Sparkles size={13} />
+              )}
               {isSummarizing ? "Summarizing..." : "Summarize this note"}
             </Button>
           ) : (
@@ -127,10 +173,11 @@ export default function NoteEditorDialog({ note, open, onClose }) {
                   onClick={() => handleSummarize(true)}
                   disabled={isSummarizing}
                 >
-                  {isSummarizing
-                    ? <Loader2 size={11} className="animate-spin" />
-                    : <RotateCcw size={11} />
-                  }
+                  {isSummarizing ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <RotateCcw size={11} />
+                  )}
                   Regenerate
                 </Button>
               </div>
@@ -156,7 +203,12 @@ export default function NoteEditorDialog({ note, open, onClose }) {
           >
             <Trash2 size={14} className="mr-2" /> Delete
           </Button>
-          <Button className="cursor-pointer" size="sm" onClick={handleSave} disabled={isSaving}>
+          <Button
+            className="cursor-pointer"
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
             {isSaving ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>
