@@ -60,27 +60,33 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
 
   const NavButton = ({ item, active, onClick }) => {
     const Icon = item.icon;
-    const button = (
-      <button
-        onClick={onClick}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium cursor-pointer transition-colors ${
-          collapsed ? "justify-center" : ""
-        } ${
-          active
-            ? "bg-brand/10 text-brand"
-            : "text-muted-foreground hover:bg-accent hover:text-foreground"
-        }`}
-      >
-        <Icon size={17} strokeWidth={2} className="shrink-0" />
-        {!collapsed && <span className="truncate">{item.label}</span>}
-      </button>
-    );
 
-    if (!collapsed) return button;
+    const buttonClass = `w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      collapsed ? "justify-center" : ""
+    } ${
+      active
+        ? "bg-brand/10 text-brand"
+        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+    }`;
+
+    if (!collapsed) {
+      return (
+        <button onClick={onClick} className={buttonClass}>
+          <Icon size={17} strokeWidth={2} className="shrink-0" />
+          <span className="truncate">{item.label}</span>
+        </button>
+      );
+    }
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <button onClick={onClick} className={buttonClass}>
+              <Icon size={17} strokeWidth={2} className="shrink-0" />
+            </button>
+          }
+        />
         <TooltipContent side="right">{item.label}</TooltipContent>
       </Tooltip>
     );
@@ -157,7 +163,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
                 );
                 return collapsed ? (
                   <Tooltip key={label}>
-                    <TooltipTrigger asChild>{button}</TooltipTrigger>
+                    <TooltipTrigger render={button}></TooltipTrigger>
                     <TooltipContent side="right">{label}</TooltipContent>
                   </Tooltip>
                 ) : (

@@ -2,7 +2,7 @@ import NoteCard from "./NoteCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pin } from "lucide-react";
 
-export default function NoteGrid({ notes, isLoading, view, onNoteClick }) {
+export default function NoteGrid({ notes, isLoading, view, onNoteClick, searchQuery }) {
   if (isLoading) {
     return (
       <div className="columns-1 sm:columns-2 lg:columns-3 gap-4">
@@ -51,6 +51,7 @@ export default function NoteGrid({ notes, isLoading, view, onNoteClick }) {
                 note={note}
                 view={view}
                 onClick={() => onNoteClick(note)}
+                searchQuery={searchQuery}
               />
             ))}
           </div>

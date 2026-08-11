@@ -16,13 +16,6 @@ export const aiApi = api.injectEndpoints({
         body,
       }),
     }),
-    semanticSearch: builder.mutation({
-      query: (body) => ({
-        url: "/ai/search",
-        method: "POST",
-        body,
-      }),
-    }),
     chatWithNotes: builder.mutation({
       query: (body) => ({ url: "/ai/chat", method: "POST", body }),
     }),
@@ -32,6 +25,5 @@ export const aiApi = api.injectEndpoints({
 export const {
   useGenerateTitleMutation,
   useSummarizeNoteMutation,
-  useSemanticSearchMutation,
   useChatWithNotesMutation,
 } = aiApi;

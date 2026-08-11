@@ -7,13 +7,9 @@ import NoteComposer from "@/components/notes/NoteComposer";
 import NoteGrid from "@/components/notes/NoteGrid";
 import NoteEditorDialog from "@/components/notes/NoteEditorDialog";
 import { exitSelectionMode } from "@/features/notes/selectionSlice";
-import { useSemanticSearchMutation } from "@/features/ai/aiApi";
 import ChatPanel from "@/components/chat/ChatPanel";
 
 export default function Dashboard() {
-  const [semanticSearch] = useSemanticSearchMutation();
-  const [semanticResults, setSemanticResults] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [activeView, setActiveView] = useState("all");
   const [editingNote, setEditingNote] = useState(null);
   const [search, setSearch] = useState("");
@@ -35,9 +31,6 @@ export default function Dashboard() {
   const { data, isLoading } = useGetNotesQuery(queryParams);
 
   const notes = useMemo(() => {
-    // Use semantic search results if available
-    if (semanticResults !== null) return semanticResults;
-
     let list = data?.notes || [];
     if (activeView === "pinned") list = list.filter((n) => n.isPinned);
     if (activeView.startsWith("label:")) {
@@ -45,16 +38,15 @@ export default function Dashboard() {
       list = list.filter((n) => n.labels?.includes(label));
     }
     if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (n) =>
-          n.title?.toLowerCase().includes(q) ||
-          n.content?.toLowerCase().includes(q) ||
-          n.labels?.some((l) => l.includes(q)),
-      );
+      const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      list = list.filter((n) => {
+        const text =
+          `${n.title || ""} ${n.content || ""} ${(n.labels || []).join(" ")}`.toLowerCase();
+        return words.every((word) => text.includes(word));
+      });
     }
     return list;
-  }, [data, activeView, search, semanticResults]);
+  }, [data, activeView, search]);
 
   const allLabels = useMemo(() => {
     const set = new Set();
@@ -62,21 +54,8 @@ export default function Dashboard() {
     return Array.from(set);
   }, [data]);
 
-  const handleSearch = async (query) => {
+  const handleSearch = (query) => {
     setSearch(query);
-    if (query.trim().length > 3) {
-      setIsSearching(true);
-      try {
-        const result = await semanticSearch({ query }).unwrap();
-        setSemanticResults(result.notes);
-      } catch {
-        setSemanticResults(null);
-      } finally {
-        setIsSearching(false);
-      }
-    } else {
-      setSemanticResults(null);
-    }
   };
 
   return (
@@ -90,9 +69,7 @@ export default function Dashboard() {
         <Navbar
           onSearch={handleSearch}
           activeView={activeView}
-          onViewChange={handleViewChange}
           currentNotes={notes}
-          isSearching={isSearching}
           onChatToggle={() => setChatOpen((prev) => !prev)}
           chatOpen={chatOpen}
         />
@@ -105,9 +82,10 @@ export default function Dashboard() {
             )}
             <NoteGrid
               notes={notes}
-              isLoading={isLoading || isSearching}
+              isLoading={isLoading}
               view={activeView}
               onNoteClick={setEditingNote}
+              searchQuery={search}
             />
           </div>
         </main>

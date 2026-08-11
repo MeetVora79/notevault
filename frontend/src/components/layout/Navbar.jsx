@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearSelection,
@@ -31,12 +32,12 @@ import {
 export default function Navbar({
   onSearch,
   activeView,
-  onViewChange,
   currentNotes = [],
-  isSearching = false,
   onChatToggle,
   chatOpen,
 }) {
+  const [searchValue, setSearchValue] = useState("");
+  const searchInputRef = useRef(null);
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
   const isSelectionMode = useSelector(
@@ -208,20 +209,32 @@ export default function Navbar({
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3 w-full">
-          <div className="relative w-full max-w-md">
+          <div className="relative flex w-full max-w-md">
             <Search
               size={15}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
             />
             <Input
+              ref={searchInputRef}
               placeholder="Search notes..."
+              value={searchValue}
               className="pl-9 h-9 shadow-sm bg-muted/50 border-transparent focus:bg-background focus:border-border transition-all"
-              onChange={(e) => onSearch(e.target.value)}
+              onChange={(e) => {
+                setSearchValue(e.target.value);
+                onSearch(e.target.value);
+              }}
             />
-            {isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="w-3.5 h-3.5 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
-              </div>
+            {searchValue && (
+              <button
+                onClick={() => {
+                  setSearchValue("");
+                  onSearch("");
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
             )}
           </div>
           {/* Chat toggle button */}

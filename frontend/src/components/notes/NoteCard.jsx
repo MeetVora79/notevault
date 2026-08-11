@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LabelDialog from "./LabelPopover";
 import SummaryDialog from "./SummaryPopover";
+import { highlightText } from "@/utils/highlight";
 import {
   Pin,
   Archive,
@@ -50,7 +51,7 @@ function ActionBtn({ label, onClick, children, destructive }) {
   );
 }
 
-export default function NoteCard({ note, view, onClick }) {
+export default function NoteCard({ note, view, onClick, searchQuery }) {
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
   const isSelectionMode = useSelector(
@@ -178,11 +179,11 @@ export default function NoteCard({ note, view, onClick }) {
                 note.isPinned ? "pr-5" : ""
               }`}
             >
-              {note.title}
+              {highlightText(note.title, searchQuery)}
             </h3>
           )}
           <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-6">
-            {note.content}
+            {highlightText(note.content, searchQuery)}
           </p>
 
           {note.labels?.length > 0 && (
