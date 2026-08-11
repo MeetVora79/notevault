@@ -112,12 +112,12 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
       <NoteEditorDialog
         note={editingNote}
         open={!!editingNote}
         onClose={() => setEditingNote(null)}
       />
-      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }

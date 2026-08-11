@@ -66,7 +66,7 @@ export default function NoteComposer() {
             onClick={handleAiTitle}
             className={`shrink-0 gap-1.5 text-xs font-medium hover:cursor-pointer transition-colors ${
               hasContent && !isGenerating
-                ? "text-ai hover:text-ai hover:bg-white"
+                ? "text-ai hover:text-ai hover:bg-accent"
                 : "text-muted-foreground"
             }`}
           >

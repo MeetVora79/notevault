@@ -18,6 +18,26 @@ export const authApi = api.injectEndpoints({
     refresh: builder.mutation({
       query: () => ({ url: "/auth/refresh", method: "POST" }),
     }),
+    setPassword: builder.mutation({
+      query: (body) => ({ url: "/auth/set-password", method: "PATCH", body }),
+      invalidatesTags: ["User"],
+    }),
+    changePassword: builder.mutation({
+      query: (body) => ({
+        url: "/auth/change-password",
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["User"],
+    }),
+    updateProfile: builder.mutation({
+      query: (body) => ({
+        url: "/auth/update-profile",
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
@@ -27,4 +47,7 @@ export const {
   useLogoutMutation,
   useLazyGetMeQuery,
   useRefreshMutation,
+  useSetPasswordMutation,
+  useChangePasswordMutation,
+  useUpdateProfileMutation,
 } = authApi;

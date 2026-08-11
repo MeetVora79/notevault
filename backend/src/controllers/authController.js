@@ -168,3 +168,85 @@ export const googleCallback = asyncHandler(async (req, res, next) => {
     );
   })(req, res, next);
 });
+
+// @desc   Set password for Google-only accounts
+// @route  PATCH /api/auth/set-password
+// @access Private
+export const setPassword = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+
+  if (!password || password.length < 8) {
+    res.status(400);
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  const user = await User.findById(req.user._id).select("+password");
+
+  if (user.password) {
+    res.status(400);
+    throw new Error("Password already set — use change password instead");
+  }
+
+  user.password = password;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Password set successfully",
+  });
+});
+
+// @desc   Change existing password
+// @route  PATCH /api/auth/change-password
+// @access Private
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    res.status(400);
+    throw new Error("Current and new password are required");
+  }
+
+  if (newPassword.length < 8) {
+    res.status(400);
+    throw new Error("New password must be at least 8 characters");
+  }
+
+  const user = await User.findById(req.user._id).select("+password");
+
+  if (!user.password) {
+    res.status(400);
+    throw new Error("No password set — use set password instead");
+  }
+
+  const isMatch = await user.matchPassword(currentPassword);
+  if (!isMatch) {
+    res.status(401);
+    throw new Error("Current password is incorrect");
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully",
+  });
+});
+
+// @desc   Update profile (name, avatarColor)
+// @route  PATCH /api/auth/update-profile
+// @access Private
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { name, avatarColor } = req.body;
+
+  if (name !== undefined) req.user.name = name.trim();
+  if (avatarColor !== undefined) req.user.avatarColor = avatarColor;
+
+  await req.user.save();
+
+  res.status(200).json({
+    success: true,
+    user: req.user.toSafeObject(),
+  });
+});

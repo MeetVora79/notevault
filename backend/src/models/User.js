@@ -23,9 +23,9 @@ const userSchema = new mongoose.Schema(
       select: false, // never return password by default
     },
     googleId: {
-  type: String,
-  default: null,
-},
+      type: String,
+      default: null,
+    },
     avatarColor: {
       type: String,
       default: () =>
@@ -64,6 +64,9 @@ userSchema.methods.toSafeObject = function () {
     name: this.name,
     email: this.email,
     createdAt: this.createdAt,
+    hasPassword: !!this.password,
+    googleId: this.googleId,
+    avatarColor: this.avatarColor
   };
 };
 
