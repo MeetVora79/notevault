@@ -17,6 +17,7 @@ import {
 import { useSummarizeNoteMutation } from "@/features/ai/aiApi";
 import { Trash2, Sparkles, Loader2, RotateCcw } from "lucide-react";
 import { useGenerateTitleMutation } from "@/features/ai/aiApi";
+import { toast } from "sonner";
 
 export default function NoteEditorDialog({ note, open, onClose }) {
   const [title, setTitle] = useState("");
@@ -68,24 +69,35 @@ export default function NoteEditorDialog({ note, open, onClose }) {
       }).unwrap();
       setSummary(result.summary);
       setSummaryVisible(true);
+      toast.success(regenerate ? "Summary regenerated" : "Summary generated");
     } catch {
-      // silently fail — button stays clickable for retry
+      toast.error("Failed to generate summary");
     }
   };
 
   const handleSave = async () => {
-    await updateNote({
-      id: note._id,
-      title: title.trim(),
-      content: content.trim(),
-      labels,
-    });
-    onClose();
+    try {
+      await updateNote({
+        id: note._id,
+        title: title.trim(),
+        content: content.trim(),
+        labels,
+      });
+      onClose();
+      toast.success("Note saved");
+    } catch {
+      toast.error("Failed to save note");
+    }
   };
 
   const handleDelete = async () => {
-    await trashNote(note._id);
-    onClose();
+    try {
+      await trashNote(note._id);
+      onClose();
+      toast.success("Note moved to trash");
+    } catch {
+      toast.error("Failed to delete note");
+    }
   };
 
   const handleOpenChange = (isOpen) => {

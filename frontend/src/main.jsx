@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { store } from "@/app/store.js";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import App from "./App.jsx";
+import { Toaster } from "sonner";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -13,6 +14,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <BrowserRouter>
         <TooltipProvider delayDuration={200}>
           <App />
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              classNames: {
+                toast: "font-sans text-sm",
+              },
+            }}
+            richColors
+          />
         </TooltipProvider>
       </BrowserRouter>
     </Provider>

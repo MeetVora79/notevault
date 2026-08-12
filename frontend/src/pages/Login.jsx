@@ -40,9 +40,10 @@ export default function Login() {
       );
       navigate("/");
     } catch (err) {
-      setServerError(
-        err?.data?.message || "Something went wrong. Please try again.",
-      );
+      const msg =
+        err?.data?.message || "Something went wrong. Please try again.";
+      setServerError(msg);
+      toast.error(msg);
     }
   };
 
@@ -94,7 +95,11 @@ export default function Login() {
               </p>
             )}
 
-            <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full cursor-pointer"
+              disabled={isLoading}
+            >
               {isLoading ? "Logging in..." : "Log in"}
             </Button>
           </form>

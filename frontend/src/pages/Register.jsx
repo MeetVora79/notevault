@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -38,9 +39,10 @@ export default function Register() {
       );
       navigate("/");
     } catch (err) {
-      setServerError(
-        err?.data?.message || "Something went wrong. Please try again.",
-      );
+      const msg =
+        err?.data?.message || "Something went wrong. Please try again.";
+      setServerError(msg);
+      toast.error(msg);
     }
   };
 
@@ -101,7 +103,11 @@ export default function Register() {
               <p className="text-sm text-destructive">{serverError}</p>
             )}
 
-            <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full cursor-pointer"
+              disabled={isLoading}
+            >
               {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>

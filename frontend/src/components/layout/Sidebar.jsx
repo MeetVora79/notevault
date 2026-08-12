@@ -33,6 +33,7 @@ import {
   User,
   ChevronUp,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const NAV_ITEMS = [
   { key: "all", label: "All notes", icon: FileText },
@@ -52,6 +53,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
   const handleLogout = async () => {
     try {
       await logout().unwrap();
+      toast.success("Logged out successfully");
     } finally {
       dispatch(api.util.resetApiState()); // ← clear cache on logout only
       dispatch(logoutLocal());
@@ -61,7 +63,7 @@ export default function Sidebar({ activeView, onViewChange, labels }) {
   const NavButton = ({ item, active, onClick }) => {
     const Icon = item.icon;
 
-    const buttonClass = `w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+    const buttonClass = `w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer font-medium transition-colors ${
       collapsed ? "justify-center" : ""
     } ${
       active

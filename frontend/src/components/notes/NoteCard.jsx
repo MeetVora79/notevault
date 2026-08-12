@@ -36,6 +36,8 @@ import {
   Copy,
   ClipboardCopy,
 } from "lucide-react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { toast } from "sonner";
 
 function ActionBtn({ label, onClick, children, destructive }) {
   return (
@@ -63,6 +65,7 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
   const [labelOpen, setLabelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [togglePin] = useTogglePinMutation();
   const [toggleArchive] = useToggleArchiveMutation();
@@ -90,6 +93,7 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
   const handleCopyToClipboard = () => {
     const text = note.title ? `${note.title}\n\n${note.content}` : note.content;
     navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   return (
@@ -100,6 +104,17 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
         note={note}
         open={summaryOpen}
         onOpenChange={setSummaryOpen}
+      />
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete this note forever?"
+        description="This note will be permanently deleted and cannot be recovered. This action cannot be undone."
+        confirmLabel="Delete forever"
+        onConfirm={async () => {
+          await deleteForever(note._id);
+          toast.error("Note permanently deleted");
+        }}
       />
       <div
         onClick={handleCardClick}
@@ -217,14 +232,19 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
                 <>
                   <ActionBtn
                     label="Restore"
-                    onClick={(e) => stop(e, () => restoreNote(note._id))}
+                    onClick={(e) =>
+                      stop(e, async () => {
+                        await restoreNote(note._id);
+                        toast.success("Note restored");
+                      })
+                    }
                   >
                     <RotateCcw size={14} />
                   </ActionBtn>
                   <ActionBtn
                     label="Delete forever"
                     destructive
-                    onClick={(e) => stop(e, () => deleteForever(note._id))}
+                    onClick={(e) => stop(e, () => setConfirmOpen(true))}
                   >
                     <Delete size={14} />
                   </ActionBtn>
@@ -233,7 +253,14 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
                 <>
                   <ActionBtn
                     label={note.isArchived ? "Unarchive" : "Archive"}
-                    onClick={(e) => stop(e, () => toggleArchive(note._id))}
+                    onClick={(e) =>
+                      stop(e, async () => {
+                        await toggleArchive(note._id);
+                        toast.success(
+                          note.isArchived ? "Note unarchived" : "Note archived",
+                        );
+                      })
+                    }
                   >
                     <Archive size={14} className="cursor-pointer" />
                   </ActionBtn>
@@ -293,7 +320,12 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
                   </DropdownMenuItem>
 
                   {/* Make a copy */}
-                  <DropdownMenuItem onClick={() => copyNote(note._id)}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      copyNote(note._id);
+                      toast.success("Note duplicated");
+                    }}
+                  >
                     <Copy size={14} className="mr-2" />
                     Make a copy
                   </DropdownMenuItem>
@@ -303,7 +335,10 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
                   {/* Delete */}
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
-                    onClick={() => trashNote(note._id)}
+                    onClick={() => {
+                      trashNote(note._id);
+                      toast.success("Note moved to trash");
+                    }}
                   >
                     <Trash2 size={14} className="mr-2" />
                     Delete

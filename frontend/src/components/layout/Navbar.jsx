@@ -28,6 +28,8 @@ import {
   Square,
   BotMessageSquare,
 } from "lucide-react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { toast } from "sonner";
 
 export default function Navbar({
   onSearch,
@@ -38,6 +40,7 @@ export default function Navbar({
 }) {
   const [searchValue, setSearchValue] = useState("");
   const searchInputRef = useRef(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const dispatch = useDispatch();
   const selectedIds = useSelector((state) => state.selection.selectedIds);
   const isSelectionMode = useSelector(
@@ -80,174 +83,197 @@ export default function Navbar({
   const handleBulkArchive = async () => {
     await Promise.all(selectedIds.map((id) => toggleArchive(id)));
     dispatch(clearSelection());
+    toast.success(
+      `${selectedIds.length} note${selectedIds.length > 1 ? "s" : ""} ${isArchived ? "unarchived" : "archived"}`,
+    );
   };
 
   const handleBulkTrash = async () => {
     await Promise.all(selectedIds.map((id) => trashNote(id)));
     dispatch(clearSelection());
+    toast.success(
+      `${selectedIds.length} note${selectedIds.length > 1 ? "s" : ""} moved to trash`,
+    );
   };
 
   const handleBulkRestore = async () => {
     await Promise.all(selectedIds.map((id) => restoreNote(id)));
     dispatch(clearSelection());
+    toast.success(
+      `${selectedIds.length} note${selectedIds.length > 1 ? "s" : ""} restored`,
+    );
   };
 
   const handleBulkDeleteForever = async () => {
+    setConfirmBulkDelete(false);
     await Promise.all(selectedIds.map((id) => deleteForever(id)));
     dispatch(clearSelection());
+    toast.error(
+      `${selectedIds.length} note${selectedIds.length > 1 ? "s" : ""} permanently deleted`,
+    );
   };
 
   return (
-    <header className="h-14 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10 flex items-center px-6 gap-4">
-      {isSelecting ? (
-        <div className="flex items-center gap-3 w-full">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 hover:cursor-pointer"
-            onClick={() => dispatch(exitSelectionMode())}
-          >
-            <X size={16} />
-          </Button>
-          <span className="text-sm font-medium">
-            {selectedIds.length} selected
-          </span>
+    <>
+      <header className="h-14 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10 flex items-center px-6 gap-4">
+        {isSelecting ? (
+          <div className="flex items-center gap-3 w-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 hover:cursor-pointer"
+              onClick={() => dispatch(exitSelectionMode())}
+            >
+              <X size={16} />
+            </Button>
+            <span className="text-sm font-medium">
+              {selectedIds.length} selected
+            </span>
 
-          {/* Select all / unselect all */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 text-muted-foreground hover:text-foreground cursor-pointer"
-            onClick={handleSelectAll}
-          >
-            {isAllSelected ? (
-              <>
-                <CheckSquare size={15} className="text-brand" />
-                <span className="text-xs">Unselect all</span>
-              </>
-            ) : (
-              <>
-                <Square size={15} />
-                <span className="text-xs">Select all ({allIds.length})</span>
-              </>
-            )}
-          </Button>
+            {/* Select all / unselect all */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground hover:text-foreground cursor-pointer"
+              onClick={handleSelectAll}
+            >
+              {isAllSelected ? (
+                <>
+                  <CheckSquare size={15} className="text-brand" />
+                  <span className="text-xs">Unselect all</span>
+                </>
+              ) : (
+                <>
+                  <Square size={15} />
+                  <span className="text-xs">Select all ({allIds.length})</span>
+                </>
+              )}
+            </Button>
 
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Trash view actions */}
-            {isTrashed ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 hover:cursor-pointer"
-                  onClick={handleBulkRestore}
-                >
-                  <RotateCcw size={14} /> Restore
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
-                  onClick={handleBulkDeleteForever}
-                >
-                  <Delete size={14} /> Delete forever
-                </Button>
-              </>
-            ) : (
-              <>
-                {/* Pin/Unpin — hidden in archive view since archived notes shouldn't be pinned */}
-                {!isArchived && (
+            <div className="flex items-center gap-2 ml-auto">
+              {/* Trash view actions */}
+              {isTrashed ? (
+                <>
                   <Button
                     variant="outline"
                     size="sm"
                     className="gap-2 hover:cursor-pointer"
-                    onClick={handleBulkPin}
+                    onClick={handleBulkRestore}
                   >
-                    {isPinned ? (
+                    <RotateCcw size={14} /> Restore
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
+                    onClick={() => setConfirmBulkDelete(true)}
+                  >
+                    <Delete size={14} /> Delete forever
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* Pin/Unpin — hidden in archive view since archived notes shouldn't be pinned */}
+                  {!isArchived && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 hover:cursor-pointer"
+                      onClick={handleBulkPin}
+                    >
+                      {isPinned ? (
+                        <>
+                          <PinOff size={14} /> Unpin
+                        </>
+                      ) : (
+                        <>
+                          <Pin size={14} /> Pin
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Archive/Unarchive */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 hover:cursor-pointer"
+                    onClick={handleBulkArchive}
+                  >
+                    {isArchived ? (
                       <>
-                        <PinOff size={14} /> Unpin
+                        <ArchiveX size={14} /> Unarchive
                       </>
                     ) : (
                       <>
-                        <Pin size={14} /> Pin
+                        <Archive size={14} /> Archive
                       </>
                     )}
                   </Button>
-                )}
 
-                {/* Archive/Unarchive */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 hover:cursor-pointer"
-                  onClick={handleBulkArchive}
-                >
-                  {isArchived ? (
-                    <>
-                      <ArchiveX size={14} /> Unarchive
-                    </>
-                  ) : (
-                    <>
-                      <Archive size={14} /> Archive
-                    </>
-                  )}
-                </Button>
-
-                {/* Delete — not shown in trash view since we handle that above */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
-                  onClick={handleBulkTrash}
-                >
-                  <Trash2 size={14} /> Delete
-                </Button>
-              </>
-            )}
+                  {/* Delete — not shown in trash view since we handle that above */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
+                    onClick={handleBulkTrash}
+                  >
+                    <Trash2 size={14} /> Delete
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between gap-3 w-full">
-          <div className="relative flex w-full max-w-md">
-            <Search
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-            />
-            <Input
-              ref={searchInputRef}
-              placeholder="Search notes..."
-              value={searchValue}
-              className="pl-9 h-9 shadow-sm bg-muted/50 border-transparent focus:bg-background focus:border-border transition-all"
-              onChange={(e) => {
-                setSearchValue(e.target.value);
-                onSearch(e.target.value);
-              }}
-            />
-            {searchValue && (
-              <button
-                onClick={() => {
-                  setSearchValue("");
-                  onSearch("");
-                  searchInputRef.current?.focus();
+        ) : (
+          <div className="flex items-center justify-between gap-3 w-full">
+            <div className="relative flex w-full max-w-md">
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+              />
+              <Input
+                ref={searchInputRef}
+                placeholder="Search notes..."
+                value={searchValue}
+                className="pl-9 h-9 shadow-sm bg-muted/50 border-transparent focus:bg-background focus:border-border transition-all"
+                onChange={(e) => {
+                  setSearchValue(e.target.value);
+                  onSearch(e.target.value);
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            )}
+              />
+              {searchValue && (
+                <button
+                  onClick={() => {
+                    setSearchValue("");
+                    onSearch("");
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+            {/* Chat toggle button */}
+            <Button
+              variant={chatOpen ? "default" : "ghost"}
+              className={`gap-1 cursor-pointer bg-accent/70 shrink-0 ${chatOpen ? "bg-brand hover:bg-brand/90" : ""}`}
+              onClick={onChatToggle}
+            >
+              <span>Chat</span>
+              <BotMessageSquare size={16} />
+            </Button>
           </div>
-          {/* Chat toggle button */}
-          <Button
-            variant={chatOpen ? "default" : "ghost"}
-            className={`gap-1 cursor-pointer bg-accent/70 shrink-0 ${chatOpen ? "bg-brand hover:bg-brand/90" : ""}`}
-            onClick={onChatToggle}
-          >
-            <span>Chat</span>
-            <BotMessageSquare size={16} />
-          </Button>
-        </div>
-      )}
-    </header>
+        )}
+      </header>
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        onOpenChange={setConfirmBulkDelete}
+        title={`Delete ${selectedIds.length} note${selectedIds.length > 1 ? "s" : ""} forever?`}
+        description="These notes will be permanently deleted and cannot be recovered. This action cannot be undone."
+        confirmLabel={`Delete ${selectedIds.length} forever`}
+        onConfirm={handleBulkDeleteForever}
+      />
+    </>
   );
 }

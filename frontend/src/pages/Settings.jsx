@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Check } from "lucide-react";
+import { toast } from "sonner";
 
 const AVATAR_COLORS = [
   "#4F46E5",
@@ -67,12 +68,6 @@ export default function SettingsDialog({ open, onOpenChange }) {
     ),
   });
 
-  const showSuccess = (msg) => {
-    setSuccessMessage(msg);
-    setServerError("");
-    setTimeout(() => setSuccessMessage(""), 3000);
-  };
-
   const handleProfileSubmit = async (data) => {
     try {
       const result = await updateProfile({
@@ -80,9 +75,11 @@ export default function SettingsDialog({ open, onOpenChange }) {
         avatarColor: selectedColor,
       }).unwrap();
       dispatch(setCredentials({ user: result.user }));
-      showSuccess("Profile updated successfully");
+      toast.success("Profile updated successfully");
     } catch (err) {
-      setServerError(err?.data?.message || "Failed to update profile");
+      const msg = err?.data?.message || "Failed to update profile";
+      setServerError(msg);
+      toast.error(msg);
     }
   };
 
@@ -97,13 +94,13 @@ export default function SettingsDialog({ open, onOpenChange }) {
         await setPassword({ password: data.password }).unwrap();
       }
       passwordForm.reset();
-      showSuccess(
-        user?.hasPassword
+      toast.success(`${user?.hasPassword}
           ? "Password changed successfully"
-          : "Password set — you can now log in with email too",
-      );
+          : "Password set — you can now log in with email too"`);
     } catch (err) {
-      setServerError(err?.data?.message || "Failed to update password");
+      const msg = err?.data?.message || "Failed to update password";
+      setServerError(msg);
+      toast.error(msg);
     }
   };
 
@@ -117,13 +114,7 @@ export default function SettingsDialog({ open, onOpenChange }) {
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 pb-4">
           <div className="space-y-6 py-2">
-            {/* Success / Error */}
-            {successMessage && (
-              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
-                <Check size={14} />
-                {successMessage}
-              </div>
-            )}
+            {/* Error */}
             {serverError && (
               <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
                 {serverError}

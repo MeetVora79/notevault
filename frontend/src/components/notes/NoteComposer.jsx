@@ -4,6 +4,7 @@ import { useGenerateTitleMutation } from "@/features/ai/aiApi";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NoteComposer() {
   const [content, setContent] = useState("");
@@ -33,11 +34,16 @@ export default function NoteComposer() {
 
   const handleCreate = async () => {
     if (!hasContent) return;
-    await createNote({ title: title.trim(), content: content.trim() });
-    setContent("");
-    setTitle("");
-    setAiError("");
-    setExpanded(false);
+    try {
+      await createNote({ title: title.trim(), content: content.trim() });
+      setContent("");
+      setTitle("");
+      setAiError("");
+      setExpanded(false);
+      toast.success("Note created");
+    } catch {
+      toast.error("Failed to create note");
+    }
   };
 
   const handleCancel = () => {
