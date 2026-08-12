@@ -87,7 +87,7 @@ export default function Register() {
               <Input
                 id="password"
                 type="password"
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
                 {...register("password")}
               />
               {errors.password && (

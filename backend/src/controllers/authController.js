@@ -18,13 +18,63 @@ export const registerUser = asyncHandler(async (req, res) => {
     throw new Error("Please provide name, email and password");
   }
 
+  // Name validation
+  if (name.trim().length < 2) {
+    res.status(400);
+    throw new Error("Name must be at least 2 characters");
+  }
+
+  if (name.trim().length > 60) {
+    res.status(400);
+    throw new Error("Name must be less than 60 characters");
+  }
+
+  if (!/^[a-zA-Z\s'-]+$/.test(name.trim())) {
+    res.status(400);
+    throw new Error(
+      "Name can only contain letters, spaces, hyphens and apostrophes",
+    );
+  }
+
+  // Email validation
+  const emailRegex = /^[a-zA-Z0-9._%+-]{2,}@[a-zA-Z0-9.-]{2,}\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error("Please provide a valid email address");
+  }
+
+  // Password validation
+  if (password.length < 8) {
+    res.status(400);
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  if (password.trim() !== password) {
+    res.status(400);
+    throw new Error("Password cannot start or end with spaces");
+  }
+
+  if (/^\s+$/.test(password)) {
+    res.status(400);
+    throw new Error("Password cannot be only spaces");
+  }
+
+  if (!/(?=.*[a-zA-Z])/.test(password)) {
+    res.status(400);
+    throw new Error("Password must contain at least one letter");
+  }
+
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     res.status(400);
     throw new Error("An account with this email already exists");
   }
 
-  const user = await User.create({ name, email, password });
+  const user = await User.create({
+    name: name.trim(),
+    email: email.toLowerCase().trim(),
+    password,
+  });
 
   const accessToken = generateAccessToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
@@ -49,6 +99,17 @@ export const loginUser = asyncHandler(async (req, res) => {
   if (!email || !password) {
     res.status(400);
     throw new Error("Please provide email and password");
+  }
+
+  const emailRegex = /^[a-zA-Z0-9._%+-]{2,}@[a-zA-Z0-9.-]{2,}\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error("Please provide a valid email address");
+  }
+
+  if (password.length < 8) {
+    res.status(400);
+    throw new Error("Password must be at least 8 characters");
   }
 
   const user = await User.findOne({ email }).select("+password +refreshTokens");

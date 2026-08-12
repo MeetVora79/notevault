@@ -9,6 +9,7 @@ import {
   useUpdateProfileMutation,
 } from "@/features/auth/authApi";
 import { setCredentials } from "@/features/auth/authSlice";
+import { setPasswordSchema, changePasswordSchema } from "@/lib/validation";
 import {
   Dialog,
   DialogContent,
@@ -35,27 +36,6 @@ const AVATAR_COLORS = [
   "#9333EA",
   "#DB2777",
 ];
-
-const setPasswordSchema = z
-  .object({
-    password: z.string().min(6, "At least 6 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Required"),
-    newPassword: z.string().min(6, "At least 6 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.newPassword === d.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
 
 const profileSchema = z.object({
   name: z.string().trim().min(2, "At least 2 characters"),
