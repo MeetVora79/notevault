@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { useGetNotesQuery } from "@/features/notes/noteApi";
 import Sidebar from "@/components/layout/Sidebar";
@@ -57,6 +57,27 @@ export default function Dashboard() {
   const handleSearch = (query) => {
     setSearch(query);
   };
+
+  useEffect(() => {
+    const titles = {
+      all: "NoteVault — All notes",
+      pinned: "NoteVault — Pinned",
+      archived: "NoteVault — Archive",
+      trashed: "NoteVault — Trash",
+    };
+
+    if (activeView.startsWith("label:")) {
+      const label = activeView.split(":")[1];
+      document.title = `NoteVault — ${label}`;
+    } else {
+      document.title = titles[activeView] || "NoteVault";
+    }
+
+    // Reset on unmount
+    return () => {
+      document.title = "NoteVault — AI-powered note taking";
+    };
+  }, [activeView]);
 
   return (
     <div className="flex h-screen overflow-hidden">

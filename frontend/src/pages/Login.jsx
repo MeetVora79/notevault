@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useForm } from "react-hook-form";
@@ -46,6 +46,13 @@ export default function Login() {
       toast.error(msg);
     }
   };
+
+  useEffect(() => {
+    document.title = "NoteVault — Log in";
+    return () => {
+      document.title = "NoteVault";
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
