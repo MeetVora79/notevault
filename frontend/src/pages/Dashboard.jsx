@@ -8,6 +8,7 @@ import NoteGrid from "@/components/notes/NoteGrid";
 import NoteEditorDialog from "@/components/notes/NoteEditorDialog";
 import { exitSelectionMode } from "@/features/notes/selectionSlice";
 import ChatPanel from "@/components/chat/ChatPanel";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function Dashboard() {
   const [activeView, setActiveView] = useState("all");
@@ -95,20 +96,22 @@ export default function Dashboard() {
           chatOpen={chatOpen}
         />
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8">
-            {activeView === "all" && !search && (
-              <div className="mb-8">
-                <NoteComposer />
-              </div>
-            )}
-            <NoteGrid
-              notes={notes}
-              isLoading={isLoading}
-              view={activeView}
-              onNoteClick={setEditingNote}
-              searchQuery={search}
-            />
-          </div>
+          <ErrorBoundary>
+            <div className="max-w-4xl mx-auto px-6 py-8">
+              {activeView === "all" && !search && (
+                <div className="mb-8">
+                  <NoteComposer />
+                </div>
+              )}
+              <NoteGrid
+                notes={notes}
+                isLoading={isLoading}
+                view={activeView}
+                onNoteClick={setEditingNote}
+                searchQuery={search}
+              />
+            </div>
+          </ErrorBoundary>
         </main>
       </div>
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
