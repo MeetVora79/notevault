@@ -310,11 +310,11 @@ function DesktopSidebar({ activeView, onViewChange, labels }) {
 function MobileSidebar({ activeView, onViewChange, labels, open, onClose }) {
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-72 flex flex-col">
+      <SheetContent side="left" className="w-72 p-0 flex flex-col">
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <div className="flex items-center px-4 py-5">
           <h1 className="font-display font-semibold text-lg tracking-tight">
-            Note<span className="text-brand">Vault</span>
+            Notes<span className="text-brand">AI</span>
           </h1>
         </div>
         <SidebarContent

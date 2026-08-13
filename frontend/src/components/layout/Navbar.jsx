@@ -28,6 +28,8 @@ import {
   Square,
   BotMessageSquare,
 } from "lucide-react";
+import { Menu } from "lucide-react";
+import { openMobileMenu } from "@/components/layout/Sidebar";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { toast } from "sonner";
 
@@ -150,25 +152,27 @@ export default function Navbar({
               )}
             </Button>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2 ml-auto overflow-x-auto">
               {/* Trash view actions */}
               {isTrashed ? (
                 <>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2 hover:cursor-pointer"
+                    className="gap-2 shrink-0 text-xs hover:cursor-pointer"
                     onClick={handleBulkRestore}
                   >
-                    <RotateCcw size={14} /> Restore
+                    <RotateCcw size={14} />{" "}
+                    <span className="hidden sm:inline">Restore</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
+                    className="gap-2 shrink-0 text-xs hover:border-destructive hover:text-destructive hover:cursor-pointer"
                     onClick={() => setConfirmBulkDelete(true)}
                   >
-                    <Delete size={14} /> Delete forever
+                    <Delete size={14} />{" "}
+                    <span className="hidden sm:inline">Delete forever</span>
                   </Button>
                 </>
               ) : (
@@ -178,16 +182,18 @@ export default function Navbar({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2 hover:cursor-pointer"
+                      className="gap-2 shrink-0 text-xs hover:cursor-pointer"
                       onClick={handleBulkPin}
                     >
                       {isPinned ? (
                         <>
-                          <PinOff size={14} /> Unpin
+                          <PinOff size={14} />{" "}
+                          <span className="hidden sm:inline">Unpin</span>
                         </>
                       ) : (
                         <>
-                          <Pin size={14} /> Pin
+                          <Pin size={14} />{" "}
+                          <span className="hidden sm:inline">Pin</span>
                         </>
                       )}
                     </Button>
@@ -197,16 +203,18 @@ export default function Navbar({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2 hover:cursor-pointer"
+                    className="gap-2 shrink-0 text-xs hover:cursor-pointer"
                     onClick={handleBulkArchive}
                   >
                     {isArchived ? (
                       <>
-                        <ArchiveX size={14} /> Unarchive
+                        <ArchiveX size={14} />{" "}
+                        <span className="hidden sm:inline">Unarchive</span>
                       </>
                     ) : (
                       <>
-                        <Archive size={14} /> Archive
+                        <Archive size={14} />{" "}
+                        <span className="hidden sm:inline">Archive</span>
                       </>
                     )}
                   </Button>
@@ -215,10 +223,11 @@ export default function Navbar({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2 hover:border-destructive hover:text-destructive hover:cursor-pointer"
+                    className="gap-2 shrink-0 text-xs hover:border-destructive hover:text-destructive hover:cursor-pointer"
                     onClick={handleBulkTrash}
                   >
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={14} />{" "}
+                    <span className="hidden sm:inline">Delete</span>
                   </Button>
                 </>
               )}
@@ -226,7 +235,17 @@ export default function Navbar({
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3 w-full">
-            <div className="relative flex w-full max-w-md">
+            {/* Hamburger — mobile only */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0 lg:hidden"
+              onClick={openMobileMenu}
+            >
+              <Menu size={18} />
+            </Button>
+
+            <div className="relative w-full max-w-md flex-1 min-w-0">
               <Search
                 size={15}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"

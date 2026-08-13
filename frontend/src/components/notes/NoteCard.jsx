@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   toggleSelect,
@@ -74,6 +74,19 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
   const [deleteForever] = useDeleteNotePermanentlyMutation();
   const [copyNote] = useCopyNoteMutation();
 
+  const longPressTimer = useRef(null);
+
+  const handleTouchStart = () => {
+    longPressTimer.current = setTimeout(() => {
+      dispatch(enterSelectionMode());
+      dispatch(toggleSelect(note._id));
+    }, 500); // 500ms hold
+  };
+
+  const handleTouchEnd = () => {
+    clearTimeout(longPressTimer.current);
+  };
+
   const stop = (e, fn) => {
     e.stopPropagation();
     fn();
@@ -118,6 +131,9 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
       />
       <div
         onClick={handleCardClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
         className={`group relative rounded-xl border bg-card cursor-pointer transition-all break-inside-avoid mb-4 overflow-hidden
         ${
           isSelected
@@ -142,7 +158,7 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
         )}
 
         {!isTrashView && !note.isPinned && (
-          <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 cursor-pointer">
+          <div className="absolute top-2 right-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer">
             <ActionBtn
               label={note.isPinned ? "Unpin" : "Pin"}
               onClick={(e) => stop(e, () => togglePin(note._id))}
@@ -225,7 +241,11 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
         {/* Action strip — slides up on hover, sits below content not over it */}
         {
           <div
-            className={`flex items-center justify-end gap-0.5 px-2 pb-2 opacity-0 ${isSelecting ? "" : " group-hover:opacity-100"} transition-opacity`}
+            className={`flex items-center justify-end gap-0.5 px-2 pb-2 transition-opacity ${
+              isSelecting
+                ? "opacity-100"
+                : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+            }`}
           >
             <div className="flex items-center gap-0.5">
               {isTrashView ? (

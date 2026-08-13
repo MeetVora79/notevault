@@ -108,7 +108,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="sr-only">Edit note</DialogTitle>
         </DialogHeader>
@@ -119,7 +119,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
             placeholder="Title (optional)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="border-0 shadow-none text-lg font-display font-medium focus-visible:ring-0 flex-1"
+            className="border-0 shadow-none text-sm sm:text-lg font-display font-medium focus-visible:ring-0 flex-1"
           />
           <Button
             type="button"
@@ -206,7 +206,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
         <LabelInput labels={labels} onChange={setLabels} />
 
         {/* Footer */}
-        <DialogFooter className="flex flex-row items-center justify-between sm:justify-between">
+        <DialogFooter className="flex flex-row items-center justify-between sm:justify-between gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -215,14 +215,16 @@ export default function NoteEditorDialog({ note, open, onClose }) {
           >
             <Trash2 size={14} className="mr-2" /> Delete
           </Button>
-          <Button
-            className="cursor-pointer"
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              className="cursor-pointer"
+              size="sm"
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

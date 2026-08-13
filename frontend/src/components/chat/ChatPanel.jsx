@@ -36,22 +36,6 @@ function Message({ msg }) {
         >
           {msg.content}
         </div>
-
-        {/* Source notes
-        {msg.sources?.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {msg.sources.map((source) => (
-              <Badge
-                key={source.id}
-                variant="outline"
-                className="text-xs gap-1 font-normal text-muted-foreground"
-              >
-                <FileText size={10} />
-                {source.title}
-              </Badge>
-            ))}
-          </div>
-        )} */}
       </div>
     </div>
   );
@@ -129,7 +113,7 @@ export default function ChatPanel({ open, onClose }) {
 
       {/* Slide-in panel */}
       <div
-        className={`fixed top-0 right-0 h-screen w-80 xl:w-96 bg-background border-l border-border z-30 flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-screen w-full sm:w-80 xl:w-96 bg-background border-l border-border z-30 flex flex-col transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

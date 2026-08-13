@@ -12,7 +12,7 @@ export default function NoteGrid({
 }) {
   if (isLoading) {
     return (
-      <div className="columns-1 sm:columns-2 lg:columns-3 gap-4">
+      <div className="columns-2 lg:columns-3 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton
             key={i}
@@ -107,7 +107,7 @@ export default function NoteGrid({
               </span>
             </div>
           )}
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4">
+          <div className="columns-2 lg:columns-3 gap-4">
             {pinnedNotes.map((note) => (
               <NoteCard
                 key={note._id}
@@ -131,7 +131,7 @@ export default function NoteGrid({
               </span>
             </div>
           )}
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4">
+          <div className="columns-2 lg:columns-3 gap-4">
             {unpinnedNotes.map((note) => (
               <NoteCard
                 key={note._id}

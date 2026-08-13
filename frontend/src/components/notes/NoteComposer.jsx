@@ -81,7 +81,9 @@ export default function NoteComposer() {
             ) : (
               <Sparkles size={13} />
             )}
-            {isGenerating ? "Generating..." : "AI Title"}
+            <span className="hidden sm:inline">
+              {isGenerating ? "Generating..." : "AI Title"}
+            </span>
           </Button>
         </div>
       )}
@@ -99,7 +101,7 @@ export default function NoteComposer() {
       )}
 
       {expanded && (
-        <div className="flex items-center justify-end gap-2 px-3 pb-3">
+        <div className="flex items-center justify-end gap-2 px-3 pb-3 flex-wrap">
           <Button
             className="cursor-pointer"
             variant="ghost"

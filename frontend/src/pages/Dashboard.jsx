@@ -87,7 +87,7 @@ export default function Dashboard() {
         onViewChange={handleViewChange}
         labels={allLabels}
       />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full">
         <Navbar
           onSearch={handleSearch}
           activeView={activeView}
