@@ -14,6 +14,9 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
 
+// Trust Render's reverse proxy so express-rate-limit can correctly identify client IPs
+app.set("trust proxy", 1);
+
 app.use(helmet());
 
 const allowedOrigin = process.env.CLIENT_URL;

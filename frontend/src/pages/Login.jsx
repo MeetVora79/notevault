@@ -144,7 +144,7 @@ export default function Login() {
             variant="outline"
             className="w-full gap-2 cursor-pointer"
             onClick={() =>
-              (window.location.href = "http://localhost:5000/api/auth/google")
+              (window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`)
             }
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">

@@ -239,7 +239,7 @@ export default function Navbar({
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 shrink-0 lg:hidden"
+              className="h-9 w-9 shrink-0 lg:hidden cursor-pointer"
               onClick={openMobileMenu}
             >
               <Menu size={18} />

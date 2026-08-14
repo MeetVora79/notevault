@@ -11,9 +11,7 @@ export const getChromaClient = () => {
       client = new ChromaClient({
         host: process.env.CHROMA_HOST,
         headers: {
-          provider: "token",
-          credentials: process.env.CHROMA_API_KEY,
-          tokenHeaderType: "CHROMA_CLIENT_AUTH_CREDENTIALS",
+          "x-chroma-token": process.env.CHROMA_API_KEY,
         },
         tenant: process.env.CHROMA_TENANT,
         database: process.env.CHROMA_DATABASE,
