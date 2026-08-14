@@ -47,7 +47,7 @@ export default function Register() {
   };
 
   useEffect(() => {
-    document.title = "NoteVault — Create account";
+    document.title = "NoteVault | Create account";
     return () => {
       document.title = "NoteVault";
     };

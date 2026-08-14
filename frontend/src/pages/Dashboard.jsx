@@ -69,7 +69,7 @@ export default function Dashboard() {
 
     if (activeView.startsWith("label:")) {
       const label = activeView.split(":")[1];
-      document.title = `NoteVault — ${label}`;
+      document.title = `NoteVault | ${label}`;
     } else {
       document.title = titles[activeView] || "NoteVault";
     }

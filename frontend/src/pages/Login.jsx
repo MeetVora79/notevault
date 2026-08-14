@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function Login() {
   };
 
   useEffect(() => {
-    document.title = "NoteVault — Log in";
+    document.title = "NoteVault | Log in";
     return () => {
       document.title = "NoteVault";
     };
