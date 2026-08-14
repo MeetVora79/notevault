@@ -10,6 +10,8 @@ export const getChromaClient = () => {
     if (isProduction) {
       client = new ChromaClient({
         host: process.env.CHROMA_HOST,
+        port: 443,
+        ssl: true,
         headers: {
           "x-chroma-token": process.env.CHROMA_API_KEY,
         },
