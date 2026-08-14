@@ -10,7 +10,7 @@ export const getChromaClient = () => {
     if (isProduction) {
       client = new ChromaClient({
         host: process.env.CHROMA_HOST,
-        auth: {
+        headers: {
           provider: "token",
           credentials: process.env.CHROMA_API_KEY,
           tokenHeaderType: "CHROMA_CLIENT_AUTH_CREDENTIALS",
