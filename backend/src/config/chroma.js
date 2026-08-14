@@ -5,11 +5,26 @@ let collection = null;
 
 export const getChromaClient = () => {
   if (!client) {
-    client = new ChromaClient({
-      host: "localhost",
-      port: 8000,
-      ssl: false,
-    });
+    const isProduction = process.env.NODE_ENV === "production";
+
+    if (isProduction) {
+      client = new ChromaClient({
+        path: process.env.CHROMA_HOST,
+        auth: {
+          provider: "token",
+          credentials: process.env.CHROMA_API_KEY,
+          tokenHeaderType: "CHROMA_CLIENT_AUTH_CREDENTIALS",
+        },
+        tenant: process.env.CHROMA_TENANT,
+        database: process.env.CHROMA_DATABASE,
+      });
+    } else {
+      client = new ChromaClient({
+        host: "localhost",
+        port: 8000,
+        ssl: false,
+      });
+    }
   }
   return client;
 };

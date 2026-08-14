@@ -4,8 +4,11 @@ let redis = null;
 
 export const getRedis = () => {
   if (!redis) {
+    const isProduction = process.env.NODE_ENV === "production";
+
     redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
       maxRetriesPerRequest: null, // required by BullMQ
+      tls: isProduction ? { rejectUnauthorized: false } : undefined,
     });
 
     redis.on("connect", () => console.log("✅ Redis connected"));
