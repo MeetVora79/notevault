@@ -10,6 +10,8 @@ import {
   setPassword,
   changePassword,
   updateProfile,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -23,6 +25,8 @@ router.get("/me", protect, getMe);
 router.patch("/set-password", protect, setPassword);
 router.patch("/change-password", protect, changePassword);
 router.patch("/update-profile", protect, updateProfile);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 // Google OAuth
 router.get("/google", googleAuth);

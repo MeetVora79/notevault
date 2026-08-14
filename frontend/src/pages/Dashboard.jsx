@@ -61,10 +61,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     const titles = {
-      all: "NoteVault — All notes",
-      pinned: "NoteVault — Pinned",
-      archived: "NoteVault — Archive",
-      trashed: "NoteVault — Trash",
+      all: "NoteVault | All notes",
+      pinned: "NoteVault | Pinned",
+      archived: "NoteVault | Archive",
+      trashed: "NoteVault | Trash",
     };
 
     if (activeView.startsWith("label:")) {
@@ -76,7 +76,7 @@ export default function Dashboard() {
 
     // Reset on unmount
     return () => {
-      document.title = "NoteVault — AI-powered note taking";
+      document.title = "NoteVault | AI-Powered Smart Notes";
     };
   }, [activeView]);
 

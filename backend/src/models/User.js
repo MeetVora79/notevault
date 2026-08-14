@@ -22,6 +22,16 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
       select: false, // never return password by default
     },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
     googleId: {
       type: String,
       default: null,
@@ -66,7 +76,7 @@ userSchema.methods.toSafeObject = function () {
     createdAt: this.createdAt,
     hasPassword: !!this.password,
     googleId: this.googleId,
-    avatarColor: this.avatarColor
+    avatarColor: this.avatarColor,
   };
 };
 

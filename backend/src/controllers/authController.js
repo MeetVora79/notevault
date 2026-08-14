@@ -7,6 +7,8 @@ import {
   setRefreshTokenCookie,
 } from "../utils/generateTokens.js";
 import passport from "../config/passport.js";
+import crypto from "crypto";
+import { sendPasswordResetEmail } from "../utils/sendEmail.js";
 
 // @desc   Register new user
 // @route  POST /api/auth/register
@@ -309,5 +311,129 @@ export const updateProfile = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     user: req.user.toSafeObject(),
+  });
+});
+
+// @desc   Send password reset email
+// @route  POST /api/auth/forgot-password
+// @access Public
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  console.log("1. Forgot password request for:", email);
+  if (!email) {
+    res.status(400);
+    throw new Error("Please provide your email address");
+  }
+
+  const user = await User.findOne({ email: email.toLowerCase().trim() }).select(
+    "+resetPasswordToken +resetPasswordExpires +password",
+  );
+  console.log("2. User found:", !!user);
+  // Always return success even if email not found — prevents email enumeration
+  if (!user) {
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists with this email, a reset link has been sent",
+    });
+  }
+  console.log(
+    "3. Has password:",
+    !!user.password,
+    "Has googleId:",
+    !!user.googleId,
+  );
+
+  // Only skip if user has absolutely no password (pure Google user)
+  // If they set a password via Settings, allow reset even if they have googleId
+  if (!user.password) {
+    console.log("4. No password set for this account, skipping");
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists with this email, a reset link has been sent",
+    });
+  }
+
+  // Generate reset token
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(rawToken)
+    .digest("hex");
+
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  await user.save();
+  console.log("5. Token saved, sending email to:", user.email);
+
+  try {
+    const resetUrl = `${process.env.RESET_PASSWORD_URL}?token=${rawToken}`;
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetUrl,
+    });
+    console.log("6. Email sent successfully");
+  } catch (emailErr) {
+    console.error("6. Email send FAILED:", emailErr.message);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "If an account exists with this email, a reset link has been sent",
+  });
+});
+
+// @desc   Reset password using token from email
+// @route  POST /api/auth/reset-password
+// @access Public
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    res.status(400);
+    throw new Error("Token and new password are required");
+  }
+
+  if (password.length < 8) {
+    res.status(400);
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  if (password.trim() !== password || /^\s+$/.test(password)) {
+    res.status(400);
+    throw new Error("Password cannot start or end with spaces");
+  }
+
+  if (!/(?=.*[a-zA-Z])/.test(password)) {
+    res.status(400);
+    throw new Error("Password must contain at least one letter");
+  }
+
+  // Hash the raw token from URL to compare with stored hash
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() }, // not expired
+  }).select("+resetPasswordToken +resetPasswordExpires");
+
+  if (!user) {
+    res.status(400);
+    throw new Error("Reset link is invalid or has expired");
+  }
+
+  // Update password and clear reset token
+  user.password = password;
+  user.resetPasswordToken = null;
+  user.resetPasswordExpires = null;
+  user.refreshTokens = []; // invalidate all sessions
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message:
+      "Password reset successfully — you can now log in with your new password",
   });
 });
