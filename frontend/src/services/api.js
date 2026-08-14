@@ -15,11 +15,18 @@ const rawBaseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
+  // Determine the URL of the request that just failed
+  const requestUrl = typeof args === "string" ? args : args.url;
+
+  // Don't attempt recovery if the failing request IS the refresh call itself —
+  // that would just retry refresh and fail again identically.
+  const isRefreshCall = requestUrl?.includes("/auth/refresh");
+
+  if (result.error && result.error.status === 401 && !isRefreshCall) {
     const refreshResult = await rawBaseQuery(
       { url: "/auth/refresh", method: "POST" },
       api,
-      extraOptions
+      extraOptions,
     );
 
     if (refreshResult.data?.accessToken) {
@@ -27,7 +34,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
         setCredentials({
           accessToken: refreshResult.data.accessToken,
           user: api.getState().auth.user,
-        })
+        }),
       );
       result = await rawBaseQuery(args, api, extraOptions); // retry original request
     } else {

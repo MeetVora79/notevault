@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { formatRetryTime } from "@/lib/utils";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -41,10 +42,17 @@ export default function Login() {
       );
       navigate("/");
     } catch (err) {
-      const msg =
-        err?.data?.message || "Something went wrong. Please try again.";
-      setServerError(msg);
-      toast.error(msg);
+      if (err?.status === 429 && err?.data?.retryAfterSeconds) {
+        const timeStr = formatRetryTime(err.data.retryAfterSeconds);
+        const msg = `Too many attempts. Try again in ${timeStr}.`;
+        setServerError(msg);
+        toast.error(msg);
+      } else {
+        const msg =
+          err?.data?.message || "Something went wrong. Please try again.";
+        setServerError(msg);
+        toast.error(msg);
+      }
     }
   };
 

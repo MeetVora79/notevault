@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import passport from "passport";
 import { initializePassport } from "./config/passport.js";
 
@@ -13,9 +14,16 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
 
+app.use(helmet());
+
+const allowedOrigin = process.env.CLIENT_URL;
+if (!allowedOrigin && process.env.NODE_ENV === "production") {
+  console.error("❌ CLIENT_URL is not set — CORS will fail in production");
+}
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: allowedOrigin || "http://localhost:5173",
     credentials: true,
   }),
 );
@@ -28,24 +36,47 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
 
-const strictAuthLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20, // login/register attempts — keep tight to slow brute force
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: "Too many attempts, try again later" },
-});
+const makeLimiter = (windowMs, max, message) =>
+  rateLimit({
+    windowMs,
+    max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      const secondsLeft = Math.ceil(
+        (req.rateLimit.resetTime - Date.now()) / 1000,
+      );
+      res
+        .status(429)
+        .json({ success: false, message, retryAfterSeconds: secondsLeft });
+    },
+  });
 
-const refreshLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200, // silent refresh fires on every page load — needs headroom
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: "Too many requests, try again later" },
-});
+const generalLimiter = makeLimiter(
+  15 * 60 * 1000,
+  300,
+  "Too many requests, try again later",
+);
+const strictAuthLimiter = makeLimiter(
+  15 * 60 * 1000,
+  20,
+  "Too many attempts, try again later",
+);
+const refreshLimiter = makeLimiter(
+  15 * 60 * 1000,
+  200,
+  "Too many requests, try again later",
+);
+const aiLimiter = makeLimiter(
+  15 * 60 * 1000,
+  50,
+  "AI usage limit reached, try again later",
+);
 
+app.use("/api", generalLimiter);
 app.use("/api/auth/refresh", refreshLimiter);
 app.use("/api/auth", strictAuthLimiter);
+app.use("/api/ai", aiLimiter);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ success: true, message: "API is healthy" });
