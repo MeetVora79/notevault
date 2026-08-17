@@ -15,6 +15,7 @@ import Dashboard from "@/pages/Dashboard";
 import AuthCallback from "@/pages/AuthCallback";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import NotFound from "@/pages/NotFound";
 
 function App() {
   const dispatch = useDispatch();
@@ -67,6 +68,8 @@ function App() {
           </ProtectedRoute>
         }
       />
+      {/* Catch-all — must be last */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

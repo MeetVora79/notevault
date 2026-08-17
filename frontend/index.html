@@ -19,7 +19,7 @@
     content="AI Notes, Notes App, Smart Notes, Semantic Search, AI Chat, Markdown Notes, Productivity, MERN Stack, React, Node.js" />
 
   <!-- Canonical -->
-  <link rel="canonical" href="https://your-domain.com/" />
+  <link rel="canonical" href="https://notevault-pro.vercel.app" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -38,7 +38,7 @@
   <meta property="og:description"
     content="Organize notes smarter with AI-generated titles, semantic search, AI chat, markdown editor, and secure cloud storage." />
   <meta property="og:image" content="https://your-domain.com/og-image.png" />
-  <meta property="og:url" content="https://your-domain.com/" />
+  <meta property="og:url" content="https://notevault-pro.vercel.app" />
   <meta property="og:site_name" content="NoteVault" />
 
   <!-- Twitter -->
@@ -50,7 +50,32 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div style="
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      font-family: sans-serif;
+    ">
+      <div style="
+        width: 32px;
+        height: 32px;
+        border: 2px solid rgba(109, 94, 248, 0.3);
+        border-top-color: #6D5EF8;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      "></div>
+    </div>
+  </div>
+  <style>
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 
