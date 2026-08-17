@@ -12,7 +12,7 @@ export default function AppLoadingScreen() {
   useEffect(() => {
     const interval = setInterval(() => {
       setStatusIndex((prev) =>
-        prev < STATUS_MESSAGES.length - 1 ? prev + 1 : prev
+        prev < STATUS_MESSAGES.length - 1 ? prev + 1 : prev,
       );
     }, 1800);
     return () => clearInterval(interval);
@@ -57,12 +57,41 @@ export default function AppLoadingScreen() {
       {/* Center overlay — logo + status */}
       <div className="fixed inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
         <div className="flex flex-col items-center gap-4">
-          {/* Logo with breathing pulse */}
+          {/* Logo */}
           <div className="relative">
             <div className="w-14 h-14 rounded-2xl bg-brand flex items-center justify-center animate-[pulse_1.6s_ease-in-out_infinite]">
-              <span className="text-white font-display font-bold text-xl">N</span>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11 6H29L37 14V38C37 40.2091 35.2091 42 33 42H11C8.79086 42 7 40.2091 7 38V10C7 7.79086 8.79086 6 11 6Z"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M29 6V13C29 14.1046 29.8954 15 31 15H37"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M14 30L20 19L25 30L31 19"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M39.5 5L40.3 7.7L43 8.5L40.3 9.3L39.5 12L38.7 9.3L36 8.5L38.7 7.7L39.5 5Z"
+                  fill="white"
+                />
+              </svg>
             </div>
-            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-ai border-2 border-background" />
           </div>
 
           <div className="flex items-center gap-2">
