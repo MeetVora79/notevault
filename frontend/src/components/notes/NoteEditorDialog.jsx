@@ -153,10 +153,10 @@ export default function NoteEditorDialog({ note, open, onClose }) {
           className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
 
-        <Separator />
+        {/* <Separator /> */}
 
         {/* Summarize section */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           {!summaryVisible ? (
             <Button
               variant="ghost"
@@ -198,7 +198,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
               </p>
             </div>
           )}
-        </div>
+        </div> */}
 
         <Separator />
 

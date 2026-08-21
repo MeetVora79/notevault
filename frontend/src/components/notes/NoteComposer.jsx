@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useCreateNoteMutation } from "@/features/notes/noteApi";
 import { useGenerateTitleMutation } from "@/features/ai/aiApi";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function NoteComposer() {
+  const textareaRef = useRef(null);
   const [content, setContent] = useState("");
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
@@ -17,6 +18,13 @@ export default function NoteComposer() {
     useGenerateTitleMutation();
 
   const hasContent = content.trim().length > 0;
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "2px"; // reset first so shrinking works too
+    el.style.height = `${el.scrollHeight}px`;
+  }, [content]);
 
   const handleAiTitle = async () => {
     if (!hasContent) return;
@@ -62,7 +70,7 @@ export default function NoteComposer() {
             placeholder="Title (optional)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="border-0 py-5 shadow-none text-base font-display font-medium focus-visible:ring-0"
+            className="border-0 py-5 mb-3 shadow-none text-base font-display font-medium focus-visible:ring-0"
           />
           <Button
             type="button"
@@ -88,12 +96,14 @@ export default function NoteComposer() {
         </div>
       )}
       <textarea
+        ref={textareaRef}
         placeholder="Take a note..."
         value={content}
         onFocus={() => setExpanded(true)}
         onChange={(e) => setContent(e.target.value)}
-        rows={expanded ? 3 : 1}
+        rows="1"
         className="w-full resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground"
+        style={{ minHeight: expanded ? "80px" : "24px", maxHeight: "60vh" }}
       />
 
       {aiError && (

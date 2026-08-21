@@ -183,7 +183,7 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
           <div
             className={`w-4.5 h-4.5 rounded-sm border-2 flex items-center justify-center transition-colors ${
               isSelected
-                ? "bg-brand border-brand"
+                ? "bg-black border-muted-foreground/40"
                 : "border-muted-foreground/50 bg-background"
             }`}
           >
