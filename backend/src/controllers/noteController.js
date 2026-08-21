@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Note from "../models/Note.js";
 import { addEmbeddingJob } from "../queues/noteQueue.js";
+import { getNotesCollection } from "../config/chroma.js";
 
 // @desc   Create a new note
 // @route  POST /api/notes
@@ -82,7 +83,10 @@ export const updateNote = asyncHandler(async (req, res) => {
 
   // Re-embed if content changed
   if (content !== undefined && note.content?.trim()) {
-    console.log("📝 Queuing embedding job for updated note:", note._id.toString());
+    console.log(
+      "📝 Queuing embedding job for updated note:",
+      note._id.toString(),
+    );
     await addEmbeddingJob(note._id.toString(), note.content, note.title);
   }
 
@@ -184,4 +188,71 @@ export const copyNote = asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({ success: true, note: copy });
+});
+
+// @desc   Get semantically related notes for a given note
+// @route  GET /api/notes/:id/related
+// @access Private
+export const getRelatedNotes = asyncHandler(async (req, res) => {
+  const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
+
+  if (!note) {
+    res.status(404);
+    throw new Error("Note not found");
+  }
+
+  // No embedding yet (e.g. brand new note, background job hasn't run) — nothing to relate
+  if (note.embeddingStatus !== "done") {
+    return res.status(200).json({ success: true, notes: [] });
+  }
+
+  try {
+    const collection = await getNotesCollection();
+
+    // Fetch this note's own stored embedding from ChromaDB, then find its neighbors
+    const stored = await collection.get({
+      ids: [note._id.toString()],
+      include: ["embeddings"],
+    });
+
+    const noteEmbedding = stored.embeddings?.[0];
+    if (!noteEmbedding) {
+      return res.status(200).json({ success: true, notes: [] });
+    }
+
+    const results = await collection.query({
+      queryEmbeddings: [noteEmbedding],
+      nResults: 6, // fetch a few extra since we filter out itself + trashed/archived
+      include: ["distances"],
+    });
+
+    const candidateIds = results.ids[0] || [];
+    const distances = results.distances[0] || [];
+
+    const THRESHOLD = 0.7;
+    const relatedIds = candidateIds
+      .filter((id, i) => id !== note._id.toString() && distances[i] < THRESHOLD)
+      .slice(0, 4);
+
+    if (!relatedIds.length) {
+      return res.status(200).json({ success: true, notes: [] });
+    }
+
+    const relatedNotes = await Note.find({
+      _id: { $in: relatedIds },
+      user: req.user._id,
+      isTrashed: false,
+      isArchived: false,
+    }).select("title content");
+
+    // Preserve similarity ranking
+    const ranked = relatedIds
+      .map((id) => relatedNotes.find((n) => n._id.toString() === id))
+      .filter(Boolean);
+
+    res.status(200).json({ success: true, notes: ranked });
+  } catch (err) {
+    console.warn("Related notes warning:", err.message);
+    res.status(200).json({ success: true, notes: [] });
+  }
 });

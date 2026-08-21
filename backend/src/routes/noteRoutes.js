@@ -10,6 +10,7 @@ import {
   restoreNote,
   deleteNotePermanently,
   copyNote,
+  getRelatedNotes,
 } from "../controllers/noteController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -26,5 +27,6 @@ router.patch("/:id/archive", toggleArchive);
 router.patch("/:id/restore", restoreNote);
 router.delete("/:id/permanent", deleteNotePermanently);
 router.post("/:id/copy", copyNote);
+router.get("/:id/related", getRelatedNotes);
 
 export default router;

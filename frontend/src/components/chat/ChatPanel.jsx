@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useChatWithNotesMutation } from "@/features/ai/aiApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { X, Send, Sparkles, Loader2, FileText, Bot, User } from "lucide-react";
+import { X, Send, Sparkles, Loader2, Bot, User } from "lucide-react";
 
 function Message({ msg }) {
   const isUser = msg.role === "user";
@@ -30,7 +29,7 @@ function Message({ msg }) {
         <div
           className={`rounded-xl px-3 py-2 text-sm leading-relaxed ${
             isUser
-              ? "bg-brand text-white rounded-tr-sm"
+              ? "bg-brand text-ai rounded-tr-sm"
               : "bg-muted text-foreground rounded-tl-sm"
           }`}
         >

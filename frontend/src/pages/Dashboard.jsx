@@ -119,6 +119,7 @@ export default function Dashboard() {
         note={editingNote}
         open={!!editingNote}
         onClose={() => setEditingNote(null)}
+        onSwitchNote={(relatedNote) => setEditingNote(relatedNote)}
       />
     </div>
   );

@@ -18,8 +18,14 @@ import { useSummarizeNoteMutation } from "@/features/ai/aiApi";
 import { Trash2, Sparkles, Loader2, RotateCcw } from "lucide-react";
 import { useGenerateTitleMutation } from "@/features/ai/aiApi";
 import { toast } from "sonner";
+import RelatedNotes from "./RelatedNotes";
 
-export default function NoteEditorDialog({ note, open, onClose }) {
+export default function NoteEditorDialog({
+  note,
+  open,
+  onClose,
+  onSwitchNote,
+}) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [labels, setLabels] = useState([]);
@@ -112,7 +118,6 @@ export default function NoteEditorDialog({ note, open, onClose }) {
         <DialogHeader>
           <DialogTitle className="sr-only">Edit note</DialogTitle>
         </DialogHeader>
-
         {/* Title + AI button */}
         <div className="flex items-center gap-2">
           <Input
@@ -141,9 +146,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
             {isGenerating ? "Generating..." : "AI Title"}
           </Button>
         </div>
-
         {aiError && <p className="text-xs text-destructive">{aiError}</p>}
-
         {/* Content */}
         <textarea
           placeholder="Write a note..."
@@ -152,9 +155,7 @@ export default function NoteEditorDialog({ note, open, onClose }) {
           rows={8}
           className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
-
         {/* <Separator /> */}
-
         {/* Summarize section */}
         {/* <div className="space-y-2">
           {!summaryVisible ? (
@@ -199,12 +200,17 @@ export default function NoteEditorDialog({ note, open, onClose }) {
             </div>
           )}
         </div> */}
-
         <Separator />
-
         {/* Labels */}
         <LabelInput labels={labels} onChange={setLabels} />
-
+        {/* <Separator /> */}
+        {/* Related notes */}
+        <RelatedNotes
+          noteId={note._id}
+          onSelectNote={(relatedNote) => {
+            onSwitchNote?.(relatedNote);
+          }}
+        />
         {/* Footer */}
         <DialogFooter className="flex flex-row items-center justify-between sm:justify-between gap-2">
           <Button

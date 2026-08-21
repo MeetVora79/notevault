@@ -48,6 +48,12 @@ export const noteApi = api.injectEndpoints({
       query: (id) => ({ url: `/notes/${id}/copy`, method: "POST" }),
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
+    getRelatedNotes: builder.query({
+      query: (id) => `/notes/${id}/related`,
+      providesTags: (result, error, id) => [
+        { type: "Note", id: `related-${id}` },
+      ],
+    }),
   }),
 });
 
@@ -61,4 +67,5 @@ export const {
   useRestoreNoteMutation,
   useDeleteNotePermanentlyMutation,
   useCopyNoteMutation,
+  useGetRelatedNotesQuery,
 } = noteApi;

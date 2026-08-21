@@ -20,10 +20,6 @@ export const getNoteQueue = () => {
 
 export const addEmbeddingJob = async (noteId, content, title = "") => {
   const queue = getNoteQueue();
-  const job = await queue.add(
-    "embed-note",
-    { noteId, content, title },
-    { jobId: `note-${noteId}` },
-  );
+  const job = await queue.add("embed-note", { noteId, content, title });
   console.log(`📬 Job added to queue: ${job.id}`);
 };
