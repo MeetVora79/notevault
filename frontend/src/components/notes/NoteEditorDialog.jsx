@@ -83,7 +83,21 @@ export default function NoteEditorDialog({
     }
   };
 
+  // Add this helper outside the component
+  const hasChanged = (note, title, content, labels) => {
+    if (title !== (note.title || "")) return true;
+    if (content !== (note.content || "")) return true;
+    if (labels.length !== (note.labels || []).length) return true;
+    if (!labels.every((l, i) => l === (note.labels || [])[i])) return true;
+    return false;
+  };
+
   const handleSave = async () => {
+    // Skip API call if nothing actually changed
+    if (!hasChanged(note, title, content, labels)) {
+      onClose();
+      return;
+    }
     try {
       await updateNote({
         id: note._id,

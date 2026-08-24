@@ -71,12 +71,14 @@ export const updateNote = asyncHandler(async (req, res) => {
 
   const { title, content, labels } = req.body;
 
+  const contentChanged =
+    content !== undefined && content.trim() !== note.content;
+
   if (title !== undefined) note.title = title;
   if (content !== undefined) note.content = content;
   if (labels !== undefined) note.labels = labels;
 
-  // If content changed significantly, mark embedding as stale (used in Phase 8)
-  if (content !== undefined) {
+  if (contentChanged) {
     note.embeddingStatus = "pending";
     note.summaryStatus = note.summary ? "pending" : "none";
   }
@@ -84,7 +86,7 @@ export const updateNote = asyncHandler(async (req, res) => {
   await note.save();
 
   // Re-embed if content changed
-  if (content !== undefined && note.content?.trim()) {
+  if (contentChanged && note.content?.trim()) {
     console.log(
       "📝 Queuing embedding job for updated note:",
       note._id.toString(),
