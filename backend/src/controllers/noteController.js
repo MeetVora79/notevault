@@ -2,6 +2,8 @@ import asyncHandler from "express-async-handler";
 import Note from "../models/Note.js";
 import { addEmbeddingJob } from "../queues/noteQueue.js";
 import { getNotesCollection } from "../config/chroma.js";
+import { getGeminiModel } from "../config/gemini.js";
+import { generateWithRetry } from "../config/gemini.js";
 
 // @desc   Create a new note
 // @route  POST /api/notes
@@ -255,4 +257,75 @@ export const getRelatedNotes = asyncHandler(async (req, res) => {
     console.warn("Related notes warning:", err.message);
     res.status(200).json({ success: true, notes: [] });
   }
+});
+
+// @desc   Merge multiple notes into one new note
+// @route  POST /api/notes/merge
+// @access Private
+export const mergeNotes = asyncHandler(async (req, res) => {
+  const { noteIds } = req.body;
+
+  if (!Array.isArray(noteIds) || noteIds.length < 2) {
+    res.status(400);
+    throw new Error("Select at least 2 notes to merge");
+  }
+
+  const notes = await Note.find({
+    _id: { $in: noteIds },
+    user: req.user._id,
+    isTrashed: false,
+  });
+
+  if (notes.length < 2) {
+    res.status(400);
+    throw new Error("Could not find the selected notes");
+  }
+
+  // Preserve the order the user selected them in
+  const ordered = noteIds
+    .map((id) => notes.find((n) => n._id.toString() === id))
+    .filter(Boolean);
+
+  const mergedContent = ordered
+    .map((n) => {
+      const heading = n.title || "Untitled note";
+      return `--- ${heading} ---\n${n.content}`;
+    })
+    .join("\n\n");
+
+  const mergedLabels = [...new Set(ordered.flatMap((n) => n.labels || []))];
+
+  // Auto-generate a title for the merged note
+  let mergedTitle = "";
+  let aiTitleGenerated = false;
+  try {
+    const model = getGeminiModel();
+    const prompt = `You are a note-taking assistant. Generate a concise, specific title for the following note.
+
+Rules:
+- Maximum 8 words
+- No quotes, punctuation at the end, or filler phrases like "Note about" or "A note on"
+- Be direct and descriptive — capture the core topic
+- Return ONLY the title, nothing else
+
+Note content:
+${mergedContent.slice(0, 3000)}`;
+
+    const result = await generateWithRetry(model, prompt);
+    mergedTitle = result.response.text().trim();
+    aiTitleGenerated = true;
+  } catch (err) {
+    console.warn("Merge title generation failed, leaving blank:", err.message);
+  }
+
+  const mergedNote = await Note.create({
+    user: req.user._id,
+    title: mergedTitle,
+    content: mergedContent,
+    labels: mergedLabels,
+    mergedFrom: noteIds, // flag so the editor knows to show "Organize with AI"
+    aiTitleGenerated,
+  });
+
+  res.status(201).json({ success: true, note: mergedNote });
 });

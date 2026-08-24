@@ -94,6 +94,7 @@ export default function Dashboard() {
           currentNotes={notes}
           onChatToggle={() => setChatOpen((prev) => !prev)}
           chatOpen={chatOpen}
+          onNoteMerged={(mergedNote) => setEditingNote(mergedNote)}
         />
         <main className="flex-1 overflow-y-auto">
           <ErrorBoundary>

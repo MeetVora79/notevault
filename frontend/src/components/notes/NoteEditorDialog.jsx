@@ -15,10 +15,11 @@ import {
   useTrashNoteMutation,
 } from "@/features/notes/noteApi";
 import { useSummarizeNoteMutation } from "@/features/ai/aiApi";
-import { Trash2, Sparkles, Loader2, RotateCcw } from "lucide-react";
+import { Trash2, Sparkles, Loader2, RotateCcw, Wand2 } from "lucide-react";
 import { useGenerateTitleMutation } from "@/features/ai/aiApi";
 import { toast } from "sonner";
 import RelatedNotes from "./RelatedNotes";
+import { useOrganizeNoteMutation } from "@/features/ai/aiApi";
 
 export default function NoteEditorDialog({
   note,
@@ -38,6 +39,7 @@ export default function NoteEditorDialog({
     useSummarizeNoteMutation();
   const [generateTitle, { isLoading: isGenerating }] =
     useGenerateTitleMutation();
+  const [organizeNote, { isLoading: isOrganizing }] = useOrganizeNoteMutation();
   const [aiError, setAiError] = useState("");
 
   // Sync state when a different note is opened
@@ -106,6 +108,21 @@ export default function NoteEditorDialog({
     }
   };
 
+  const handleOrganize = async () => {
+    try {
+      const result = await organizeNote({
+        content,
+        noteId: note._id,
+      }).unwrap();
+      setContent(result.content);
+      toast.success("Note organized");
+    } catch (err) {
+      const msg =
+        err?.data?.message || "Failed to organize note. Please try again.";
+      toast.error(msg);
+    }
+  };
+
   const handleOpenChange = (isOpen) => {
     if (!isOpen) handleSave();
   };
@@ -146,6 +163,18 @@ export default function NoteEditorDialog({
             {isGenerating ? "Generating..." : "AI Title"}
           </Button>
         </div>
+        {note.mergedFrom?.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs text-ai hover:text-ai bg-ai/10 w-fit cursor-pointer"
+            onClick={handleOrganize}
+            disabled={isOrganizing}
+          >
+            <Wand2 size={13} className={isOrganizing ? "animate-pulse" : ""} />
+            {isOrganizing ? "Organizing..." : "Organize with AI"}
+          </Button>
+        )}
         {aiError && <p className="text-xs text-destructive">{aiError}</p>}
         {/* Content */}
         <textarea

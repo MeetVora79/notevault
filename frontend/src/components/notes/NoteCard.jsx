@@ -230,12 +230,6 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
               ))}
             </div>
           )}
-
-          {note.aiTitleGenerated && (
-            <Badge className="mt-2 gap-1 bg-ai/10 text-ai border border-ai/20 text-xs font-mono font-normal hover:bg-ai/10">
-              <Sparkles size={11} /> AI title
-            </Badge>
-          )}
         </div>
 
         {/* Action strip — slides up on hover, sits below content not over it */}

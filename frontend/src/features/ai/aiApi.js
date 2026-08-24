@@ -19,6 +19,13 @@ export const aiApi = api.injectEndpoints({
     chatWithNotes: builder.mutation({
       query: (body) => ({ url: "/ai/chat", method: "POST", body }),
     }),
+    organizeNote: builder.mutation({
+      query: (body) => ({
+        url: "/ai/organize",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -26,4 +33,5 @@ export const {
   useGenerateTitleMutation,
   useSummarizeNoteMutation,
   useChatWithNotesMutation,
+  useOrganizeNoteMutation,
 } = aiApi;

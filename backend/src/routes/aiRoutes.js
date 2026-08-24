@@ -3,6 +3,7 @@ import {
   generateTitle,
   summarizeNote,
   chatWithNotes,
+  organizeNote,
 } from "../controllers/aiController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -13,5 +14,6 @@ router.use(protect);
 router.post("/generate-title", generateTitle);
 router.post("/summarize", summarizeNote);
 router.post("/chat", chatWithNotes);
+router.post("/organize", organizeNote);
 
 export default router;

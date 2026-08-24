@@ -31,6 +31,10 @@ const noteSchema = new mongoose.Schema(
       enum: ["none", "pending", "done", "failed"],
       default: "none",
     },
+    mergedFrom: {
+      type: [mongoose.Schema.Types.ObjectId],
+      default: undefined, // only present on notes created via merge
+    },
     chromaId: { type: String, default: null },
 
     // --- Organization ---

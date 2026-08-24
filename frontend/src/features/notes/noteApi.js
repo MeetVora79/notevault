@@ -54,6 +54,14 @@ export const noteApi = api.injectEndpoints({
         { type: "Note", id: `related-${id}` },
       ],
     }),
+    mergeNotes: builder.mutation({
+      query: (noteIds) => ({
+        url: "/notes/merge",
+        method: "POST",
+        body: { noteIds },
+      }),
+      invalidatesTags: [{ type: "Note", id: "LIST" }],
+    }),
   }),
 });
 
@@ -68,4 +76,5 @@ export const {
   useDeleteNotePermanentlyMutation,
   useCopyNoteMutation,
   useGetRelatedNotesQuery,
+  useMergeNotesMutation,
 } = noteApi;

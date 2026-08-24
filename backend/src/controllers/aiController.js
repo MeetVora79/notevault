@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import { getGeminiModel } from "../config/gemini.js";
+import { getGeminiModel, generateWithRetry } from "../config/gemini.js";
 import { getNotesCollection } from "../config/chroma.js";
 import { generateEmbedding } from "../utils/generateEmbedding.js";
 import Note from "../models/Note.js";
@@ -163,4 +163,57 @@ Answer:`;
   }));
 
   res.status(200).json({ success: true, answer, sources });
+});
+
+// @desc   Reorganize merged note content using Gemini
+// @route  POST /api/ai/organize
+// @access Private
+export const organizeNote = asyncHandler(async (req, res) => {
+  const { content, noteId } = req.body;
+
+  if (!content?.trim()) {
+    res.status(400);
+    throw new Error("Content is required");
+  }
+
+  const model = getGeminiModel();
+
+  const prompt = `You are organizing a note that was merged from multiple separate notes (marked with "--- Heading ---" sections).
+
+Rules:
+- Reorganize the content by topic/theme instead of by original section
+- Merge overlapping or duplicate points
+- Do NOT omit, summarize away, or lose any fact, detail, or piece of information — every distinct point from every section must appear somewhere in the output
+- Do NOT invent new information
+- Remove the "--- Heading ---" markers — write as one continuous, well-structured note using natural paragraph breaks or simple headings if helpful
+- Return ONLY the reorganized note content, nothing else
+
+Content to reorganize:
+${content}`;
+
+  try {
+    const result = await generateWithRetry(model, prompt);
+    const organized = result.response.text().trim();
+
+    if (noteId) {
+      await Note.findOneAndUpdate(
+        { _id: noteId, user: req.user._id },
+        { content: organized, embeddingStatus: "pending" },
+      );
+    }
+
+    res.status(200).json({ success: true, content: organized });
+  } catch (err) {
+    console.warn("Organize note failed:", err.message);
+
+    const isOverloaded =
+      err.message?.includes("503") || err.message?.includes("overloaded");
+
+    res.status(503);
+    throw new Error(
+      isOverloaded
+        ? "AI is temporarily overloaded — please try again in a moment. Your note content is unchanged."
+        : "Could not organize note right now. Your note content is unchanged.",
+    );
+  }
 });

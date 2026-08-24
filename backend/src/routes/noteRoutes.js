@@ -11,6 +11,7 @@ import {
   deleteNotePermanently,
   copyNote,
   getRelatedNotes,
+  mergeNotes,
 } from "../controllers/noteController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -19,6 +20,7 @@ const router = express.Router();
 router.use(protect); // every route below requires a logged-in user
 
 router.route("/").post(createNote).get(getNotes);
+router.post("/merge", mergeNotes); // must come before "/:id" routes
 
 router.route("/:id").get(getNoteById).put(updateNote).delete(trashNote);
 

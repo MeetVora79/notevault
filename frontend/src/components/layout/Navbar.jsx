@@ -31,6 +31,8 @@ import {
 import { Menu } from "lucide-react";
 import { openMobileMenu } from "@/components/layout/Sidebar";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { GitMerge } from "lucide-react";
+import { useMergeNotesMutation } from "@/features/notes/noteApi";
 import { toast } from "sonner";
 
 export default function Navbar({
@@ -39,6 +41,7 @@ export default function Navbar({
   currentNotes = [],
   onChatToggle,
   chatOpen,
+  onNoteMerged,
 }) {
   const [searchValue, setSearchValue] = useState("");
   const searchInputRef = useRef(null);
@@ -59,6 +62,7 @@ export default function Navbar({
   const [trashNote] = useTrashNoteMutation();
   const [restoreNote] = useRestoreNoteMutation();
   const [deleteForever] = useDeleteNotePermanentlyMutation();
+  const [mergeNotes, { isLoading: isMerging }] = useMergeNotesMutation();
 
   const isTrashed = activeView === "trashed";
   const isPinned = activeView === "pinned";
@@ -113,6 +117,17 @@ export default function Navbar({
     toast.error(
       `${selectedIds.length} note${selectedIds.length > 1 ? "s" : ""} permanently deleted`,
     );
+  };
+
+  const handleMerge = async () => {
+    try {
+      const result = await mergeNotes(selectedIds).unwrap();
+      dispatch(clearSelection());
+      toast.success("Notes merged");
+      onNoteMerged?.(result.note); // opens the merged note in the editor
+    } catch {
+      toast.error("Failed to merge notes");
+    }
   };
 
   return (
@@ -177,6 +192,20 @@ export default function Navbar({
                 </>
               ) : (
                 <>
+                  {!isTrashed && selectedIds.length >= 2 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 shrink-0 text-xs cursor-pointer"
+                      onClick={handleMerge}
+                      disabled={isMerging}
+                    >
+                      <GitMerge size={13} />
+                      <span className="hidden sm:inline">
+                        {isMerging ? "Merging..." : "Merge"}
+                      </span>
+                    </Button>
+                  )}
                   {/* Pin/Unpin — hidden in archive view since archived notes shouldn't be pinned */}
                   {!isArchived && (
                     <Button
