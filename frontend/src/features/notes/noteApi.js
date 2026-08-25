@@ -62,6 +62,33 @@ export const noteApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
+    acknowledgeReminder: builder.mutation({
+      query: ({ noteId, reminderId }) => ({
+        url: `/notes/${noteId}/reminders/${reminderId}/acknowledge`,
+        method: "PATCH",
+      }),
+      invalidatesTags: (result, error, { noteId }) => [
+        { type: "Note", id: noteId },
+      ],
+    }),
+    unacknowledgeReminder: builder.mutation({
+      query: ({ noteId, reminderId }) => ({
+        url: `/notes/${noteId}/reminders/${reminderId}/unacknowledge`,
+        method: "PATCH",
+      }),
+      invalidatesTags: (result, error, { noteId }) => [
+        { type: "Note", id: noteId },
+      ],
+    }),
+    removeReminder: builder.mutation({
+      query: ({ noteId, reminderId }) => ({
+        url: `/notes/${noteId}/reminders/${reminderId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { noteId }) => [
+        { type: "Note", id: noteId },
+      ],
+    }),
   }),
 });
 
@@ -77,4 +104,7 @@ export const {
   useCopyNoteMutation,
   useGetRelatedNotesQuery,
   useMergeNotesMutation,
+  useAcknowledgeReminderMutation,
+  useUnacknowledgeReminderMutation,
+  useRemoveReminderMutation,
 } = noteApi;

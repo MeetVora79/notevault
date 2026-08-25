@@ -35,6 +35,15 @@ const noteSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.ObjectId],
       default: undefined, // only present on notes created via merge
     },
+    reminders: [
+      {
+        text: { type: String, required: true },
+        datetime: { type: String, default: null },
+        acknowledged: { type: Boolean, default: false },
+        dismissed: { type: Boolean, default: false },
+        extractedAt: { type: Date, default: Date.now },
+      },
+    ],
     chromaId: { type: String, default: null },
 
     // --- Organization ---

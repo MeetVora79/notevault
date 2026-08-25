@@ -12,6 +12,9 @@ import {
   copyNote,
   getRelatedNotes,
   mergeNotes,
+  acknowledgeReminder,
+  unacknowledgeReminder,
+  removeReminder,
 } from "../controllers/noteController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -30,5 +33,9 @@ router.patch("/:id/restore", restoreNote);
 router.delete("/:id/permanent", deleteNotePermanently);
 router.post("/:id/copy", copyNote);
 router.get("/:id/related", getRelatedNotes);
+
+router.patch("/:id/reminders/:reminderId/acknowledge", acknowledgeReminder);
+router.patch("/:id/reminders/:reminderId/unacknowledge", unacknowledgeReminder);
+router.delete("/:id/reminders/:reminderId", removeReminder);
 
 export default router;

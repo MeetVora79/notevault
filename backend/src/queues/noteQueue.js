@@ -23,3 +23,9 @@ export const addEmbeddingJob = async (noteId, content, title = "") => {
   const job = await queue.add("embed-note", { noteId, content, title });
   console.log(`📬 Job added to queue: ${job.id}`);
 };
+
+export const addReminderJob = async (noteId, content, title = "") => {
+  const queue = getNoteQueue();
+  const job = await queue.add("extract-reminders", { noteId, content, title });
+  console.log(`🔔 Reminder extraction job added: ${job.id}`);
+};

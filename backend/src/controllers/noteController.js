@@ -1,6 +1,6 @@
 import asyncHandler from "express-async-handler";
 import Note from "../models/Note.js";
-import { addEmbeddingJob } from "../queues/noteQueue.js";
+import { addEmbeddingJob, addReminderJob } from "../queues/noteQueue.js";
 import { getNotesCollection } from "../config/chroma.js";
 import { getGeminiModel } from "../config/gemini.js";
 import { generateWithRetry } from "../config/gemini.js";
@@ -20,6 +20,7 @@ export const createNote = asyncHandler(async (req, res) => {
 
   if (note.content?.trim()) {
     await addEmbeddingJob(note._id.toString(), note.content, note.title);
+    await addReminderJob(note._id.toString(), note.content, note.title);
   }
 
   res.status(201).json({ success: true, note });
@@ -92,6 +93,7 @@ export const updateNote = asyncHandler(async (req, res) => {
       note._id.toString(),
     );
     await addEmbeddingJob(note._id.toString(), note.content, note.title);
+    await addReminderJob(note._id.toString(), note.content, note.title);
   }
 
   res.status(200).json({ success: true, note });
@@ -330,4 +332,66 @@ ${mergedContent.slice(0, 3000)}`;
   });
 
   res.status(201).json({ success: true, note: mergedNote });
+});
+
+// @desc   Acknowledge a reminder
+// @route  PATCH /api/notes/:id/reminders/:reminderId/acknowledge
+// @access Private
+export const acknowledgeReminder = asyncHandler(async (req, res) => {
+  const note = await Note.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      user: req.user._id,
+      "reminders._id": req.params.reminderId,
+    },
+    { $set: { "reminders.$.acknowledged": true } },
+    { new: true },
+  );
+
+  if (!note) {
+    res.status(404);
+    throw new Error("Note or reminder not found");
+  }
+
+  res.status(200).json({ success: true, note });
+});
+
+// @desc   Unacknowledge a reminder (undo)
+// @route  PATCH /api/notes/:id/reminders/:reminderId/unacknowledge
+// @access Private
+export const unacknowledgeReminder = asyncHandler(async (req, res) => {
+  const note = await Note.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      user: req.user._id,
+      "reminders._id": req.params.reminderId,
+    },
+    { $set: { "reminders.$.acknowledged": false } },
+    { new: true }
+  );
+
+  if (!note) {
+    res.status(404);
+    throw new Error("Note or reminder not found");
+  }
+
+  res.status(200).json({ success: true, note });
+});
+
+// @desc   Remove a reminder permanently
+// @route  DELETE /api/notes/:id/reminders/:reminderId
+// @access Private
+export const removeReminder = asyncHandler(async (req, res) => {
+  const note = await Note.findOneAndUpdate(
+    { _id: req.params.id, user: req.user._id },
+    { $pull: { reminders: { _id: req.params.reminderId } } },
+    { new: true }
+  );
+
+  if (!note) {
+    res.status(404);
+    throw new Error("Note or reminder not found");
+  }
+
+  res.status(200).json({ success: true, note });
 });

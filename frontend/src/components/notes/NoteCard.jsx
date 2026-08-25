@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { toast } from "sonner";
+import ReminderChip from "./ReminderChip";
 
 function ActionBtn({ label, onClick, children, destructive }) {
   return (
@@ -227,6 +228,22 @@ export default function NoteCard({ note, view, onClick, searchQuery }) {
                 >
                   {label}
                 </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Active reminders — not dismissed */}
+          {note.reminders?.length > 0 && (
+            <div
+              className="flex flex-wrap gap-1.5 mt-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {note.reminders.map((reminder) => (
+                <ReminderChip
+                  key={reminder._id}
+                  reminder={reminder}
+                  noteId={note._id}
+                />
               ))}
             </div>
           )}

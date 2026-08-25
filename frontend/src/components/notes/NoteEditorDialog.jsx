@@ -145,7 +145,7 @@ export default function NoteEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="sr-only">Edit note</DialogTitle>
         </DialogHeader>
