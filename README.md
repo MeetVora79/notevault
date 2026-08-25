@@ -1,8 +1,10 @@
-# NoteVault — AI-Powered Smart Notes & Productivity App
+# NoteVault — AI-Powered Smart Notes Management App
 
-A full-stack, SaaS-style note management application where notes are more than plain text — AI automatically generates titles, summarizes long content, and lets you **chat with your own notes** using Retrieval-Augmented Generation (RAG).
+A full-stack, SaaS-style note management application where notes are more than plain text — AI automatically generates titles, summarizes long content, and lets you **chat with your own notes** using Retrieval-Augmented Generation (RAG), automatically detects reminders and deadlines, surfaces semantically related notes, and lets you merge notes intelligently.
 
 Built with the MERN stack (MongoDB, Express, React, Node.js), Redux Toolkit, Google Gemini, ChromaDB,Redis and BullMQ.
+
+**Live:** https://notevault-pro.vercel.app
 
 ---
 
@@ -40,6 +42,10 @@ Built with the MERN stack (MongoDB, Express, React, Node.js), Redux Toolkit, Goo
 - **AI Summarization** — on-demand summary for any note, with regenerate option
 - **Semantic Embeddings** — every note is embedded in the background (BullMQ + Redis) and stored in ChromaDB
 - **RAG Chat** — a slide-in chat panel that answers questions across all your notes using retrieved context, with source note references
+- **Related Notes** — opens automatically inside the note editor showing 3-4 semantically similar notes as horizontally scrollable mini-cards; clicking one instantly swaps the editor to that note — a "second brain" experience with no manual linking required
+- **Smart Reminder Extraction** — background job automatically detects dates, deadlines, meetings, and time-sensitive tasks from note content ("Meet John on Friday", "Submit report by 5th") and surfaces them as amber bell chips on the note card
+- **Note Merging** — select 2+ notes, click Merge → instantly concatenates into one note with `--- Section ---` headings, auto-generates an AI title, and opens the editor. Optional **"Organize with AI"** button inside the merged note reorganizes content by topic/theme instead of by original note — preserving every fact, just structured better
+- **Organize with AI** — available on any merged note; Gemini intelligently reorganizes the content without losing any information; gracefully falls back on Gemini 503 errors with the original content unchanged
 
 ### Authentication & Account
 
@@ -53,6 +59,22 @@ Built with the MERN stack (MongoDB, Express, React, Node.js), Redux Toolkit, Goo
 - Editable profile (display name, avatar color)
 - Rate-limited auth endpoints (brute-force protection)
 
+### Smart Reminders
+- Extracted automatically in the background after every note save — no user action needed
+- Amber bell chips appear on note cards with reminder text and datetime
+- Clicking a chip opens a popover with full actions:
+  - **Got it** — marks as acknowledged (chip goes strikethrough/muted)
+  - **Undo** — reverts an accidental acknowledgment back to active
+  - **Remove** — permanently deletes the reminder from the note
+- Duplicate-detection prevents the same reminder being extracted twice on subsequent saves
+
+### Note Merging
+- Select 2 or more notes using multi-select checkboxes
+- Click **Merge** in the selection navbar — notes concatenated instantly, AI title auto-generated, editor opens
+- **Organize with AI** button (shown only on merged notes) — Gemini restructures content by theme, removes `--- Section ---` markers, de-duplicates overlapping points
+- Retry logic handles Gemini 503 (overload) errors — up to 2 retries with exponential backoff before graceful failure
+- On failure, original merged content is preserved exactly — nothing is ever lost
+
 ### SaaS-Grade UI/UX
 
 - Professional design system: custom color tokens, Sora (display) + Inter (body) + JetBrains Mono (AI metadata) typography
@@ -62,6 +84,7 @@ Built with the MERN stack (MongoDB, Express, React, Node.js), Redux Toolkit, Goo
 - Context-aware empty states for every view (All / Pinned / Archive / Trash / Label / Search)
 - Confirmation dialogs for destructive actions (permanent delete)
 - Error boundary to prevent full-app crashes
+- 404 page with navigation back to notes
 - Fully responsive (mobile, tablet, desktop)
 
 ---
@@ -74,7 +97,7 @@ Built with the MERN stack (MongoDB, Express, React, Node.js), Redux Toolkit, Goo
 | Backend                      | Node.js, Express                                                                                              |
 | Database                     | MongoDB (Mongoose)                                                                                            |
 | Auth                         | JWT (access + refresh), Passport.js (Google OAuth 2.0), bcrypt                                                |
-| AI (generation + embeddings) | Google Gemini API (`gemini-flash-latest` for generation, `gemini-embedding-001` for embeddings)               |
+| AI (generation + embeddings) | Google Gemini API (`gemini-3.6-flash` for generation, `gemini-embedding-001` for embeddings)               |
 | Vector Database              | ChromaDB (local via Docker in dev, Chroma Cloud in production)                                                |
 | Background Jobs              | BullMQ + Redis (local via Docker in dev, Upstash Redis in production)                                         |
 | Transactional Email          | Resend                                                                                                        |
@@ -87,30 +110,42 @@ Built with the MERN stack (MongoDB, Express, React, Node.js), Redux Toolkit, Goo
 ```
 ┌──────────────┐        ┌──────────────┐        ┌──────────────┐
 │   React      │◄──────►│   Express    │◄──────►│  MongoDB     │
-│ Redux Toolkit│        │   API Layer  │        │  (notes,     │
-│  (Vercel)    │        │   (Render)   │        │   users)     │
+│ Redux Toolkit│        │   API Layer  │        │  Atlas       │
+│  (Vercel)    │        │   (Render)   │        │              │
 └──────────────┘        └──────┬───────┘        └──────────────┘
+       ▲                       │
+       │ /api/* proxy          │
+       │ (same-origin cookie)  │
+       └───────────────────────┘
                                 │
-                       ┌────────┴────────┐
-                       │  BullMQ + Redis  │  background embedding jobs
-                       │   (Upstash)      │
-                       └────────┬────────┘
+                    ┌───────────┴────────────┐
+                    │  BullMQ + Upstash Redis │
+                    │  Job types:             │
+                    │  • embed-note           │
+                    │  • extract-reminders    │
+                    └───────────┬────────────┘
                                 │
-                       ┌────────┴────────┐
-                       │  Google Gemini   │  generation + embeddings
-                       └────────┬────────┘
+                    ┌───────────┴────────────┐
+                    │  Google Gemini API      │
+                    │  • Text generation      │
+                    │  • Embeddings           │
+                    └───────────┬────────────┘
                                 │
-                       ┌────────┴────────┐
-                       │  ChromaDB        │  semantic memory (RAG chat)
-                       │  (Chroma Cloud)  │
-                       └─────────────────┘
+                    ┌───────────┴────────────┐
+                    │  ChromaDB (Chroma Cloud)│
+                    │  • Semantic memory      │
+                    │  • RAG retrieval        │
+                    │  • Related notes        │
+                    └────────────────────────┘
 ```
 
 **Request flow for AI features:**
 
-- **Title / Summary** — synchronous request → Gemini → response shown immediately (user is actively waiting).
-- **Embeddings** — fired asynchronously via BullMQ on every note create/update; a background worker calls Gemini for the embedding and upserts it into ChromaDB. The user never waits for this.
+- **Title / Summary / Organize** — synchronous → Gemini → response (user is actively waiting, 1-2s acceptable)
+- **Embeddings + Reminder extraction** — BullMQ job queued on every note save; background worker processes silently; user never waits
 - **RAG Chat** — the question is embedded, ChromaDB returns the most relevant notes, their content is passed as context to Gemini, which generates a grounded answer with source references.
+- **Related Notes** — reuses stored note embedding from ChromaDB (no extra Gemini call) → nearest neighbors queried → shown in editor
+- **Cookie security** — refresh token is httpOnly + Secure + SameSite=Lax; all API calls proxied through Vercel so cookie is always first-party regardless of browser third-party cookie blocking
 
 ---
 
@@ -125,7 +160,7 @@ notes-ai/
 │   │   ├── controllers/     # auth, note, ai controllers
 │   │   ├── routes/          # auth, note, ai routes
 │   │   ├── middleware/      # auth (protect), error handling
-│   │   ├── queues/          # BullMQ note embedding queue + worker
+│   │   ├── queues/          # BullMQ queue (embed-note + extract-reminders) + worker
 │   │   ├── utils/           # token generation, embeddings, email
 │   │   └── app.js           # Express app (middleware, routes)
 │   ├── server.js            # Entry point (loads env, connects DB/Redis, starts server + worker)
@@ -139,6 +174,7 @@ notes-ai/
 │   │   ├── components/       # layout, notes, chat, ui (shadcn)
 │   │   ├── pages/             # Login, Register, Dashboard, Settings, etc.
 │   │   ├── routes/           # ProtectedRoute
+│   │   ├── lib/              # validation schemas (Zod), utils (formatRetryTime, highlightText)
 │   │   └── App.jsx
 │   ├── vercel.json           # SPA rewrites + API proxy to backend
 │   └── package.json
@@ -353,13 +389,51 @@ Create a Redis database on Upstash, copy the `rediss://` connection string (note
 | `npm run build` | frontend | Production build                                     |
 
 ---
+ 
+## API Overview
+ 
+| Method | Route | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register with email/password |
+| POST | `/api/auth/login` | Login with email/password |
+| POST | `/api/auth/refresh` | Refresh access token via cookie |
+| POST | `/api/auth/logout` | Logout, invalidate refresh token |
+| GET | `/api/auth/me` | Get current user |
+| GET | `/api/auth/google` | Initiate Google OAuth |
+| GET | `/api/auth/google/callback` | Google OAuth callback |
+| PATCH | `/api/auth/set-password` | Set password for Google-only account |
+| PATCH | `/api/auth/change-password` | Change existing password |
+| PATCH | `/api/auth/update-profile` | Update name / avatar color |
+| POST | `/api/auth/forgot-password` | Send password reset email |
+| POST | `/api/auth/reset-password` | Reset password with token |
+| GET | `/api/notes` | Get all notes (with filters) |
+| POST | `/api/notes` | Create note |
+| PUT | `/api/notes/:id` | Update note |
+| DELETE | `/api/notes/:id` | Trash note |
+| POST | `/api/notes/merge` | Merge multiple notes into one |
+| GET | `/api/notes/:id/related` | Get semantically related notes |
+| PATCH | `/api/notes/:id/pin` | Toggle pin |
+| PATCH | `/api/notes/:id/archive` | Toggle archive |
+| PATCH | `/api/notes/:id/restore` | Restore from trash |
+| DELETE | `/api/notes/:id/permanent` | Delete forever |
+| POST | `/api/notes/:id/copy` | Duplicate note |
+| PATCH | `/api/notes/:id/reminders/:rid/acknowledge` | Acknowledge reminder |
+| PATCH | `/api/notes/:id/reminders/:rid/unacknowledge` | Undo acknowledgment |
+| DELETE | `/api/notes/:id/reminders/:rid` | Remove reminder permanently |
+| POST | `/api/ai/generate-title` | Generate title with Gemini |
+| POST | `/api/ai/summarize` | Summarize note with Gemini |
+| POST | `/api/ai/organize` | Organize merged note content with Gemini |
+| POST | `/api/ai/chat` | RAG chat — answer questions from notes |
+
+---
 
 ## Known Limitations
 
-- Free-tier infrastructure (Render, Atlas M0, Upstash, Chroma Cloud) introduces noticeable latency (several hundred ms to ~1s per request) due to shared compute and cross-region hops — expected on $0 infrastructure, not a code-level issue.
-- Basic email format validation only — no email verification step, so unreachable-but-well-formed addresses can still register.
-- Semantic search is used only in the RAG chat panel; the main search bar is keyword-based by design (mirrors predictable, Keep-style search UX).
-- Free-tier Gemini API keys are subject to rate limits and model availability that vary by Google Cloud project — see comments in `backend/src/config/gemini.js` if you need to swap models.
+- **Free-tier latency** — Render, Atlas M0, Upstash, and Chroma Cloud are shared infrastructure. Expect 400ms–1.5s per request (cross-region hops) and up to 15s cold-start if the Render instance was idle. Use a keep-alive ping service (cron-job.org) to mitigate cold starts.
+- **Email validation** — format and domain-length checks only; no email verification step. A real email is not enforced at the code level.
+- **Reminder datetime parsing** — Gemini returns the datetime string exactly as written in the note ("Friday", "by 5th") — no normalization to actual Date objects, so no calendar integration or push notifications yet.
+- **Google OAuth on free tier Gemini** — model availability varies by Google Cloud project. If `gemini-3.6-flash` becomes unavailable, update `GEMINI_EMBEDDING_MODEL` and the default in `gemini.js`. A model-discovery script is included in the repo.
+- **Semantic search removed from main search** — the search bar uses client-side keyword matching (fast, predictable, Keep-style). Semantic/vector search is used only in RAG chat and Related Notes where it provides genuine value over keyword matching.
 
 ---
 
