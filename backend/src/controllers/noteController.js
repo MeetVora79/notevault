@@ -29,20 +29,52 @@ export const createNote = asyncHandler(async (req, res) => {
 // @desc   Get all notes for logged-in user (with filters)
 // @route  GET /api/notes?folder=&tag=&archived=&trashed=&search=
 // @access Private
+import { getRedis } from "../config/redis.js";
+
+const client = getRedis();
+
 export const getNotes = asyncHandler(async (req, res) => {
   const { label, archived, trashed, search } = req.query;
 
-  const query = { user: req.user._id };
-
-  query.isArchived = archived === "true";
-  query.isTrashed = trashed === "true";
+  const query = {
+    user: req.user._id,
+    isArchived: archived === "true",
+    isTrashed: trashed === "true",
+  };
 
   if (label) query.labels = label;
-  if (search) query.$text = { $search: search };
 
+  if (search) {
+    query.$text = { $search: search };
+  }
+
+  const cacheKey = `notes:${req.user._id}:${label || ""}:${archived || ""}:${trashed || ""}:${search || ""}`;
+
+  // 1. Check Redis
+  const cacheValue = await client.get(cacheKey);
+
+  if (cacheValue) {
+    const notes = JSON.parse(cacheValue);
+
+    return res.status(200).json({
+      success: true,
+      count: notes.length,
+      notes,
+    });
+  }
+
+  // 2. If Redis doesn't have it → MongoDB
   const notes = await Note.find(query).sort({ isPinned: -1, updatedAt: -1 });
 
-  res.status(200).json({ success: true, count: notes.length, notes });
+  // 3. Store MongoDB result in Redis
+  await client.set(cacheKey, JSON.stringify(notes), "EX", 180);
+
+  // 4. Same response structure as before
+  return res.status(200).json({
+    success: true,
+    count: notes.length,
+    notes,
+  });
 });
 
 // @desc   Get single note by id
@@ -367,7 +399,7 @@ export const unacknowledgeReminder = asyncHandler(async (req, res) => {
       "reminders._id": req.params.reminderId,
     },
     { $set: { "reminders.$.acknowledged": false } },
-    { new: true }
+    { new: true },
   );
 
   if (!note) {
@@ -385,7 +417,7 @@ export const removeReminder = asyncHandler(async (req, res) => {
   const note = await Note.findOneAndUpdate(
     { _id: req.params.id, user: req.user._id },
     { $pull: { reminders: { _id: req.params.reminderId } } },
-    { new: true }
+    { new: true },
   );
 
   if (!note) {

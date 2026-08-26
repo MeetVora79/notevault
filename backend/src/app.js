@@ -77,8 +77,9 @@ const aiLimiter = makeLimiter(
 );
 
 app.use("/api", generalLimiter);
+app.use("/api/auth/login", strictAuthLimiter);
+app.use("/api/auth/register", strictAuthLimiter);
 app.use("/api/auth/refresh", refreshLimiter);
-app.use("/api/auth", strictAuthLimiter);
 app.use("/api/ai", aiLimiter);
 
 app.get("/api/health", (req, res) => {
