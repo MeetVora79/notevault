@@ -9,25 +9,36 @@ const handleEmbedding = async (job) => {
   const { noteId, content, title } = job.data;
   console.log(`🔄 Embedding note ${noteId}...`);
 
-  await Note.findByIdAndUpdate(noteId, { embeddingStatus: "pending" });
+  try {
+    await Note.findByIdAndUpdate(noteId, { embeddingStatus: "pending" });
 
-  const textToEmbed = title ? `${title}\n\n${content}` : content;
-  const embedding = await generateEmbedding(textToEmbed);
+    const textToEmbed = title ? `${title}\n\n${content}` : content;
+    const embedding = await generateEmbedding(textToEmbed);
 
-  const collection = await getNotesCollection();
-  await collection.upsert({
-    ids: [noteId],
-    embeddings: [embedding],
-    metadatas: [{ noteId, updatedAt: new Date().toISOString() }],
-    documents: [textToEmbed],
-  });
+    const collection = await getNotesCollection();
+    await collection.upsert({
+      ids: [noteId],
+      embeddings: [embedding],
+      metadatas: [{ noteId, updatedAt: new Date().toISOString() }],
+      documents: [textToEmbed],
+    });
 
-  await Note.findByIdAndUpdate(noteId, {
-    embeddingStatus: "done",
-    chromaId: noteId,
-  });
+    await Note.findByIdAndUpdate(noteId, {
+      embeddingStatus: "done",
+      chromaId: noteId,
+    });
 
-  console.log(`✅ Note ${noteId} embedded successfully`);
+    console.log(`✅ Note ${noteId} embedded successfully`);
+  } catch (err) {
+    console.error(`❌ Embedding failed for note ${noteId}:`, err.message);
+
+    // Mark as failed so UI can show the error state
+    await Note.findByIdAndUpdate(noteId, {
+      embeddingStatus: "failed",
+    });
+
+    throw err; // Re-throw so BullMQ can retry
+  }
 };
 
 const handleReminderExtraction = async (job) => {
@@ -136,10 +147,16 @@ export const startNoteWorker = () => {
 
   worker.on("failed", async (job, err) => {
     console.error(`❌ Job failed: ${job.id} — ${err.message}`);
-    if (job.name === "embed-note") {
-      await Note.findByIdAndUpdate(job.data.noteId, {
-        embeddingStatus: "failed",
-      });
+
+    // Only update status if it's an embedding job and we have a noteId
+    if (job.name === "embed-note" && job.data?.noteId) {
+      try {
+        await Note.findByIdAndUpdate(job.data.noteId, {
+          embeddingStatus: "failed",
+        });
+      } catch (updateErr) {
+        console.error(`Failed to update note status: ${updateErr.message}`);
+      }
     }
   });
 

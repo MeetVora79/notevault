@@ -19,13 +19,20 @@ const start = async () => {
 
   // Wait for Redis to be ready before starting worker
   const redis = getRedis();
-  await new Promise((resolve, reject) => {
-    if (redis.status === "ready") return resolve();
-    redis.once("ready", resolve);
-    redis.once("error", reject);
-  });
+  try {
+    await new Promise((resolve, reject) => {
+      if (redis.status === "ready") return resolve();
+      redis.once("ready", resolve);
+      redis.once("error", reject);
+      // Add timeout to prevent hanging indefinitely
+      setTimeout(() => reject(new Error("Redis connection timeout after 10s")), 10000);
+    });
 
-  startNoteWorker();
+    startNoteWorker();
+  } catch (err) {
+    console.error("❌ Redis connection failed, background worker not started:", err.message);
+    console.error("⚠️ Note: Embedding and reminder extraction will not work until Redis is available");
+  }
 };
 
 start();

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const getGeminiModel = (model = "gemini-3.6-flash") => {
+export const getGeminiModel = (model = process.env.GEMINI_MODEL || "gemini-3.6-flash") => {
   const key = process.env.GEMINI_API_KEY;
   if (!key)
     throw new Error("GEMINI_API_KEY is not set in environment variables");

@@ -14,6 +14,12 @@ export const generateTitle = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Note content is required to generate a title");
   }
+
+  if (content.length > 100000) {
+    res.status(400);
+    throw new Error("Content too long for title generation (max 100,000 characters)");
+  }
+
   const model = getGeminiModel();
 
   const prompt = `You are a note-taking assistant. Generate a concise, specific title for the following note.
@@ -48,6 +54,11 @@ export const summarizeNote = asyncHandler(async (req, res) => {
   if (!content || !content.trim()) {
     res.status(400);
     throw new Error("Note content is required to summarize");
+  }
+
+  if (content.length > 500000) {
+    res.status(400);
+    throw new Error("Content too long for summarization (max 500,000 characters)");
   }
 
   const model = getGeminiModel();
@@ -87,6 +98,21 @@ export const chatWithNotes = asyncHandler(async (req, res) => {
   if (!message?.trim()) {
     res.status(400);
     throw new Error("Message is required");
+  }
+
+  if (message.length > 10000) {
+    res.status(400);
+    throw new Error("Message cannot exceed 10,000 characters");
+  }
+
+  if (!Array.isArray(history)) {
+    res.status(400);
+    throw new Error("History must be an array");
+  }
+
+  if (history.length > 20) {
+    res.status(400);
+    throw new Error("Conversation history cannot exceed 20 messages");
   }
 
   // Step 1 — embed the user's question
@@ -174,6 +200,11 @@ export const organizeNote = asyncHandler(async (req, res) => {
   if (!content?.trim()) {
     res.status(400);
     throw new Error("Content is required");
+  }
+
+  if (content.length > 1000000) {
+    res.status(400);
+    throw new Error("Content too long for organization (max 1000,000 characters)");
   }
 
   const model = getGeminiModel();

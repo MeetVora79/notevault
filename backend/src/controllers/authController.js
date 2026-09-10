@@ -114,7 +114,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     throw new Error("Password must be at least 8 characters");
   }
 
-  const user = await User.findOne({ email }).select("+password +refreshTokens");
+  const user = await User.findOne({ email }).select("+password +refreshTokens +resetPasswordToken +resetPasswordExpires");
 
   if (!user || !(await user.matchPassword(password))) {
     res.status(401);
@@ -125,6 +125,9 @@ export const loginUser = asyncHandler(async (req, res) => {
   const refreshToken = generateRefreshToken(user._id);
 
   user.refreshTokens = [...(user.refreshTokens || []), refreshToken].slice(-5);
+  // Clear any pending password reset tokens on successful login
+  user.resetPasswordToken = null;
+  user.resetPasswordExpires = null;
   await user.save();
 
   setRefreshTokenCookie(res, refreshToken);
@@ -217,7 +220,7 @@ export const googleCallback = asyncHandler(async (req, res, next) => {
       );
     }
 
-    const { user, appAccessToken, appRefreshToken } = data;
+    const { user, appAccessToken, appRefreshToken, accountLinked } = data;
 
     res.cookie("refreshToken", appRefreshToken, {
       httpOnly: true,
@@ -226,9 +229,12 @@ export const googleCallback = asyncHandler(async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.redirect(
-      `${process.env.CLIENT_URL}/auth/callback?token=${appAccessToken}`,
-    );
+    // Add accountLinked flag to URL if Google was linked to existing account
+    const callbackUrl = accountLinked
+      ? `${process.env.CLIENT_URL}/auth/callback?token=${appAccessToken}&linked=true`
+      : `${process.env.CLIENT_URL}/auth/callback?token=${appAccessToken}`;
+
+    res.redirect(callbackUrl);
   })(req, res, next);
 });
 

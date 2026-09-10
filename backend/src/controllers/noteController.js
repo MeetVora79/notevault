@@ -4,12 +4,46 @@ import { addEmbeddingJob, addReminderJob } from "../queues/noteQueue.js";
 import { getNotesCollection } from "../config/chroma.js";
 import { getGeminiModel } from "../config/gemini.js";
 import { generateWithRetry } from "../config/gemini.js";
+import { getRedis } from "../config/redis.js";
+
+const client = getRedis();
+
+// Helper function to invalidate user's note cache
+const invalidateNoteCache = async (userId) => {
+  try {
+    const pattern = `notes:${userId}:*`;
+    const keys = await client.keys(pattern);
+    if (keys.length > 0) {
+      await client.del(...keys);
+      console.log(`🗑️ Invalidated ${keys.length} cache entries for user ${userId}`);
+    }
+  } catch (err) {
+    console.warn("Cache invalidation warning:", err.message);
+    // Don't throw - cache invalidation failure shouldn't break the request
+  }
+};
 
 // @desc   Create a new note
 // @route  POST /api/notes
 // @access Private
 export const createNote = asyncHandler(async (req, res) => {
   const { title, content, labels } = req.body;
+
+  // Validate content length
+  if (content && content.length > 1000000) {
+    res.status(400);
+    throw new Error("Note content cannot exceed 1MB (1,000,000 characters)");
+  }
+
+  if (title && title.length > 500) {
+    res.status(400);
+    throw new Error("Note title cannot exceed 500 characters");
+  }
+
+  if (labels && labels.length > 50) {
+    res.status(400);
+    throw new Error("Cannot add more than 50 labels to a note");
+  }
 
   const note = await Note.create({
     user: req.user._id,
@@ -19,20 +53,23 @@ export const createNote = asyncHandler(async (req, res) => {
   });
 
   if (note.content?.trim()) {
-    await addEmbeddingJob(note._id.toString(), note.content, note.title);
-    await addReminderJob(note._id.toString(), note.content, note.title);
+    try {
+      await addEmbeddingJob(note._id.toString(), note.content, note.title);
+      await addReminderJob(note._id.toString(), note.content, note.title);
+    } catch (err) {
+      console.error("Failed to queue background jobs:", err.message);
+      // Don't fail the request - the note was created successfully
+      // The embedding status will remain "none" and can be retried later
+    }
   }
 
+  await invalidateNoteCache(req.user._id);
   res.status(201).json({ success: true, note });
 });
 
 // @desc   Get all notes for logged-in user (with filters)
 // @route  GET /api/notes?folder=&tag=&archived=&trashed=&search=
 // @access Private
-import { getRedis } from "../config/redis.js";
-
-const client = getRedis();
-
 export const getNotes = asyncHandler(async (req, res) => {
   const { label, archived, trashed, search } = req.query;
 
@@ -104,6 +141,22 @@ export const updateNote = asyncHandler(async (req, res) => {
 
   const { title, content, labels } = req.body;
 
+  // Validate input
+  if (content && content.length > 1000000) {
+    res.status(400);
+    throw new Error("Note content cannot exceed 1MB (1,000,000 characters)");
+  }
+
+  if (title && title.length > 500) {
+    res.status(400);
+    throw new Error("Note title cannot exceed 500 characters");
+  }
+
+  if (labels && labels.length > 50) {
+    res.status(400);
+    throw new Error("Cannot add more than 50 labels to a note");
+  }
+
   const contentChanged =
     content !== undefined && content.trim() !== note.content;
 
@@ -124,10 +177,17 @@ export const updateNote = asyncHandler(async (req, res) => {
       "📝 Queuing embedding job for updated note:",
       note._id.toString(),
     );
-    await addEmbeddingJob(note._id.toString(), note.content, note.title);
-    await addReminderJob(note._id.toString(), note.content, note.title);
+    try {
+      await addEmbeddingJob(note._id.toString(), note.content, note.title);
+      await addReminderJob(note._id.toString(), note.content, note.title);
+    } catch (err) {
+      console.error("Failed to queue background jobs:", err.message);
+      // Don't fail the request - the note update was successful
+      // The embedding status is already set to "pending" and can be retried
+    }
   }
 
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, note });
 });
 
@@ -142,6 +202,7 @@ export const togglePin = asyncHandler(async (req, res) => {
   }
   note.isPinned = !note.isPinned;
   await note.save();
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, note });
 });
 
@@ -156,6 +217,7 @@ export const toggleArchive = asyncHandler(async (req, res) => {
   }
   note.isArchived = !note.isArchived;
   await note.save();
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, note });
 });
 
@@ -171,6 +233,7 @@ export const trashNote = asyncHandler(async (req, res) => {
   note.isTrashed = true;
   note.isPinned = false;
   await note.save();
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, message: "Note moved to trash" });
 });
 
@@ -185,6 +248,7 @@ export const restoreNote = asyncHandler(async (req, res) => {
   }
   note.isTrashed = false;
   await note.save();
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, note });
 });
 
@@ -202,6 +266,7 @@ export const deleteNotePermanently = asyncHandler(async (req, res) => {
     throw new Error("Note must be trashed before permanent deletion");
   }
   await note.deleteOne();
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, message: "Note permanently deleted" });
 });
 
@@ -225,6 +290,7 @@ export const copyNote = asyncHandler(async (req, res) => {
     labels: original.labels,
   });
 
+  await invalidateNoteCache(req.user._id);
   res.status(201).json({ success: true, note: copy });
 });
 
@@ -306,6 +372,11 @@ export const mergeNotes = asyncHandler(async (req, res) => {
     throw new Error("Select at least 2 notes to merge");
   }
 
+  if (noteIds.length > 20) {
+    res.status(400);
+    throw new Error("Cannot merge more than 20 notes at once");
+  }
+
   const notes = await Note.find({
     _id: { $in: noteIds },
     user: req.user._id,
@@ -363,6 +434,7 @@ ${mergedContent.slice(0, 3000)}`;
     aiTitleGenerated,
   });
 
+  await invalidateNoteCache(req.user._id);
   res.status(201).json({ success: true, note: mergedNote });
 });
 
@@ -385,6 +457,7 @@ export const acknowledgeReminder = asyncHandler(async (req, res) => {
     throw new Error("Note or reminder not found");
   }
 
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, note });
 });
 
@@ -407,6 +480,7 @@ export const unacknowledgeReminder = asyncHandler(async (req, res) => {
     throw new Error("Note or reminder not found");
   }
 
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, note });
 });
 
@@ -425,5 +499,6 @@ export const removeReminder = asyncHandler(async (req, res) => {
     throw new Error("Note or reminder not found");
   }
 
+  await invalidateNoteCache(req.user._id);
   res.status(200).json({ success: true, note });
 });

@@ -26,10 +26,14 @@ export const initializePassport = () => {
             $or: [{ googleId: profile.id }, { email }],
           });
 
+          let accountLinked = false;
+
           if (user) {
             if (!user.googleId) {
+              // Linking Google to existing email+password account
               user.googleId = profile.id;
               await user.save();
+              accountLinked = true;
             }
           } else {
             user = await User.create({
@@ -48,7 +52,12 @@ export const initializePassport = () => {
           ].slice(-5);
           await user.save();
 
-          return done(null, { user, appAccessToken, appRefreshToken });
+          return done(null, {
+            user,
+            appAccessToken,
+            appRefreshToken,
+            accountLinked,
+          });
         } catch (err) {
           return done(err, null);
         }

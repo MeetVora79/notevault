@@ -35,17 +35,19 @@ export const getNotesCollection = async () => {
 
     // Suppress ChromaDB's DefaultEmbeddingFunction warning
     const originalWarn = console.warn;
-    console.warn = () => {};
+    try {
+      console.warn = () => {};
 
-    collection = await chroma.getOrCreateCollection({
-      name: process.env.CHROMA_COLLECTION || "notes",
-      metadata: { "hnsw:space": "cosine" },
-      embeddingFunction: {
-        generate: async (texts) => texts.map(() => []),
-      },
-    });
-
-    console.warn = originalWarn; // restore
+      collection = await chroma.getOrCreateCollection({
+        name: process.env.CHROMA_COLLECTION || "notes",
+        metadata: { "hnsw:space": "cosine" },
+        embeddingFunction: {
+          generate: async (texts) => texts.map(() => []),
+        },
+      });
+    } finally {
+      console.warn = originalWarn; // always restore
+    }
   }
   return collection;
 };
