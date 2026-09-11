@@ -94,9 +94,11 @@ export default function SettingsDialog({ open, onOpenChange }) {
         await setPassword({ password: data.password }).unwrap();
       }
       passwordForm.reset();
-      toast.success(`${user?.hasPassword}
+      toast.success(
+        user?.hasPassword
           ? "Password changed successfully"
-          : "Password set — you can now log in with email too"`);
+          : "Password set — you can now log in with email too",
+      );
     } catch (err) {
       const msg = err?.data?.message || "Failed to update password";
       setServerError(msg);
